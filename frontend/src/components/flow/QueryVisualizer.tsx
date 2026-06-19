@@ -1,10 +1,9 @@
-import { useCallback } from "react"
+import { useCallback, useEffect } from "react"
 import {
   ReactFlow,
   Background,
   Controls,
   MiniMap,
-  type Edge,
   type Connection,
   BackgroundVariant,
   useNodesState,
@@ -13,9 +12,12 @@ import {
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import TableNode, { type TableNodeType } from "./TableNode"
+import AnimatedEdge, { type AnimatedEdgeType } from "./AnimatedEdge"
 import type { TableSchema } from "@/types"
+import type { PipelineState } from "./pipeline-types"
 
 const nodeTypes = { tableNode: TableNode }
+const edgeTypes = { animatedEdge: AnimatedEdge }
 
 const defaultSchema: TableSchema[] = [
   {
@@ -66,13 +68,27 @@ const defaultSchema: TableSchema[] = [
   },
 ]
 
-function buildNodes(schema: TableSchema[]): TableNodeType[] {
+function buildNodes(
+  schema: TableSchema[],
+  pipeline: PipelineState,
+  tables: string[]
+): TableNodeType[] {
   const gapX = 320
   const gapY = 180
 
   return schema.map((table, i) => {
     const isLeft = i < 2
     const index = isLeft ? i : i - 2
+    const isInvolved = tables.includes(table.name)
+    const isHighlighted = pipeline.active && isInvolved
+
+    let rows: { filtered: string[]; kept: string[] } | undefined
+    if (pipeline.currentStep === "filter" && isInvolved) {
+      rows = {
+        kept: ["row: id=1, title='...'", "row: id=3, title='...'"],
+        filtered: ["row: id=2, title='...'", "row: id=4, title='...'", "row: id=5, title='...'"],
+      }
+    }
 
     return {
       id: table.name,
@@ -89,57 +105,55 @@ function buildNodes(schema: TableSchema[]): TableNodeType[] {
           primaryKey: col.type.includes("PK"),
           foreignKey: col.type.includes("FK"),
         })),
+        highlighted: isHighlighted,
+        pipelineStep: pipeline.active ? pipeline.currentStep : null,
+        rows,
       },
     }
   })
 }
 
-function buildEdges(): Edge[] {
-  return [
-    {
-      id: "e-users-subscriptions",
-      source: "users",
-      target: "subscriptions",
-      animated: true,
-      style: { stroke: "#818cf8", strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
-    },
-    {
-      id: "e-users-watch_history",
-      source: "users",
-      target: "watch_history",
-      animated: true,
-      style: { stroke: "#818cf8", strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
-    },
-    {
-      id: "e-movies-watch_history",
-      source: "movies",
-      target: "watch_history",
-      animated: true,
-      style: { stroke: "#818cf8", strokeWidth: 2 },
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
-    },
+function buildEdges(pipeline: PipelineState): AnimatedEdgeType[] {
+  const edgeDefs = [
+    { id: "e-users-subscriptions", source: "users", target: "subscriptions" },
+    { id: "e-users-watch_history", source: "users", target: "watch_history" },
+    { id: "e-movies-watch_history", source: "movies", target: "watch_history" },
   ]
+
+  return edgeDefs.map((def) => ({
+    ...def,
+    type: "animatedEdge",
+    style: { stroke: "#818cf8", strokeWidth: 2 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
+    data: { active: pipeline.currentStep === "join" && pipeline.active },
+  }))
 }
 
 interface QueryVisualizerProps {
   schema?: TableSchema[]
+  pipeline?: PipelineState
+  tables?: string[]
 }
 
-export function QueryVisualizer({ schema = defaultSchema }: QueryVisualizerProps) {
-  const initialNodes = buildNodes(schema)
-  const initialEdges = buildEdges()
+export function QueryVisualizer({
+  schema = defaultSchema,
+  pipeline = { active: false, currentStep: null, completedSteps: [] },
+  tables = [],
+}: QueryVisualizerProps) {
+  const initialNodes = buildNodes(schema, pipeline, tables)
+  const initialEdges = buildEdges(pipeline)
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes)
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges)
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
 
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      console.log("connect", connection)
-    },
-    []
-  )
+  useEffect(() => {
+    setNodes(buildNodes(schema, pipeline, tables))
+    setEdges(buildEdges(pipeline))
+  }, [pipeline, tables, schema, setNodes, setEdges])
+
+  const onConnect = useCallback((connection: Connection) => {
+    console.log("connect", connection)
+  }, [])
 
   return (
     <div className="w-full h-full" role="region" aria-label="Database schema visualization">
@@ -150,6 +164,7 @@ export function QueryVisualizer({ schema = defaultSchema }: QueryVisualizerProps
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         fitViewOptions={{ padding: 0.3 }}
         minZoom={0.3}

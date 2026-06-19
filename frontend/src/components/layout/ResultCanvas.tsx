@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { QueryVisualizer } from "@/components/flow/QueryVisualizer"
+import { StepPipeline } from "@/components/flow/StepPipeline"
 import type { QueryResponse } from "@/types"
+import type { PipelineStep, PipelineState } from "@/components/flow/pipeline-types"
 import {
   Brain,
   AlertCircle,
@@ -23,6 +25,8 @@ interface ResultCanvasProps {
   error: string | null
   onExecute: () => void
 }
+
+const stepOrder: PipelineStep[] = ["scan", "join", "filter"]
 
 function EmptyState({ onExecute }: { onExecute: () => void }) {
   return (
@@ -175,6 +179,42 @@ export function ResultCanvas({
   onExecute,
 }: ResultCanvasProps) {
   const [view, setView] = useState<"results" | "graph">("results")
+  const [pipeline, setPipeline] = useState<PipelineState>({
+    active: false,
+    currentStep: null,
+    completedSteps: [],
+  })
+
+  const tables = result?.tables ?? []
+
+  const handleStartPipeline = useCallback(() => {
+    setPipeline({
+      active: true,
+      currentStep: "scan",
+      completedSteps: [],
+    })
+  }, [])
+
+  const handleNextPipeline = useCallback(() => {
+    setPipeline((prev) => {
+      if (!prev.currentStep) return prev
+      const idx = stepOrder.indexOf(prev.currentStep)
+      const nextStep = idx < stepOrder.length - 1 ? stepOrder[idx + 1] : null
+      return {
+        active: nextStep !== null,
+        currentStep: nextStep,
+        completedSteps: [...prev.completedSteps, prev.currentStep],
+      }
+    })
+  }, [])
+
+  const handleResetPipeline = useCallback(() => {
+    setPipeline({
+      active: false,
+      currentStep: null,
+      completedSteps: [],
+    })
+  }, [])
 
   return (
     <Card
@@ -204,7 +244,21 @@ export function ResultCanvas({
       </div>
 
       {view === "graph" ? (
-        <QueryVisualizer />
+        <>
+          {status === "success" && result && (
+            <StepPipeline
+              pipeline={pipeline}
+              onStart={handleStartPipeline}
+              onNext={handleNextPipeline}
+              onReset={handleResetPipeline}
+              tables={tables}
+            />
+          )}
+          <QueryVisualizer
+            pipeline={pipeline}
+            tables={tables}
+          />
+        </>
       ) : status === "idle" ? (
         <EmptyState onExecute={onExecute} />
       ) : status === "loading" ? (
