@@ -38,7 +38,8 @@ export function useQueryLab() {
     }))
 
     try {
-      const res = await fetch("/api/v1/query/execute", {
+      const baseUrl = import.meta.env.VITE_API_URL ?? ""
+      const res = await fetch(`${baseUrl}/api/v1/query/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: state.query, dialect: state.dialect }),
