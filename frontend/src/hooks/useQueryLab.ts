@@ -65,10 +65,46 @@ export function useQueryLab() {
     }
   }, [state.query, state.dialect])
 
+  const resetDatabase = useCallback(async () => {
+    const confirmed = window.confirm(
+      "This will reset the database to its original state.\n" +
+      "All seed data will be restored. Continue?"
+    )
+    if (!confirmed) return
+
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL ?? ""
+      const res = await fetch(`${baseUrl}/api/v1/admin/reset`, {
+        method: "POST",
+      })
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => null)
+        throw new Error(body?.message ?? `Reset failed: ${res.status}`)
+      }
+
+      const body = await res.json()
+      setState((prev) => ({
+        ...prev,
+        status: "success",
+        result: null,
+        error: null,
+      }))
+      alert(body.message)
+    } catch (err) {
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        error: err instanceof Error ? err.message : "Reset failed",
+      }))
+    }
+  }, [])
+
   return {
     ...state,
     setQuery,
     setDialect,
     execute,
+    resetDatabase,
   }
 }

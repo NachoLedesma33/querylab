@@ -2,6 +2,7 @@ package com.querylab.api.infrastructure.executors;
 
 import com.querylab.api.domain.models.QueryResponse;
 import com.querylab.api.domain.ports.QueryExecutor;
+import com.querylab.api.infrastructure.config.QueryValidator;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -13,9 +14,11 @@ import java.util.regex.Pattern;
 public class GraphqlQueryExecutor implements QueryExecutor {
 
     private final JdbcTemplate jdbcTemplate;
+    private final QueryValidator validator;
 
-    public GraphqlQueryExecutor(JdbcTemplate jdbcTemplate) {
+    public GraphqlQueryExecutor(JdbcTemplate jdbcTemplate, QueryValidator validator) {
         this.jdbcTemplate = jdbcTemplate;
+        this.validator = validator;
     }
 
     @Override
@@ -23,8 +26,25 @@ public class GraphqlQueryExecutor implements QueryExecutor {
         ParsedGraphQL parsed = parse(query);
         String sql = buildSql(parsed);
 
+        validator.validate(sql);
+
         long start = System.currentTimeMillis();
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(sql);
+
+        List<Map<String, Object>> rows;
+        try {
+            rows = jdbcTemplate.queryForList(sql);
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("timeout")) {
+                throw new IllegalArgumentException(
+                    "Query timed out. Try selecting fewer fields or adding filters."
+                );
+            }
+            throw new IllegalArgumentException(
+                "Error executing GraphQL query: " + (msg != null ? msg : "Unknown error")
+            );
+        }
+
         long elapsed = System.currentTimeMillis() - start;
 
         List<String> tables = List.of(parsed.tableName);
@@ -48,7 +68,12 @@ public class GraphqlQueryExecutor implements QueryExecutor {
         );
         Matcher matcher = queryPattern.matcher(trimmed);
         if (!matcher.matches()) {
-            throw new IllegalArgumentException("Invalid GraphQL query format. Expected: { tableName { field1 field2 } }");
+            throw new IllegalArgumentException(
+                "Invalid GraphQL query format.\n\n" +
+                "Expected: { tableName { field1 field2 } }\n" +
+                "Example: { movies { title year } }\n" +
+                "With filter: { users(id: 1) { name email } }"
+            );
         }
 
         String tableName = matcher.group(1);

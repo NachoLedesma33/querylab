@@ -2,6 +2,7 @@ package com.querylab.api.infrastructure.executors;
 
 import com.querylab.api.domain.models.QueryResponse;
 import com.querylab.api.domain.ports.QueryExecutor;
+import com.querylab.api.infrastructure.config.QueryValidator;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -15,21 +16,45 @@ import java.util.regex.Pattern;
 public class SqlQueryExecutor implements QueryExecutor {
 
     private final JdbcTemplate jdbcTemplate;
+    private final QueryValidator validator;
 
-    public SqlQueryExecutor(JdbcTemplate jdbcTemplate) {
+    private static final int MAX_ROWS = 1000;
+    private static final int QUERY_TIMEOUT_SECONDS = 10;
+
+    private static final Pattern HAS_LIMIT = Pattern.compile(
+        "\\bLIMIT\\s+\\d+", Pattern.CASE_INSENSITIVE
+    );
+
+    public SqlQueryExecutor(JdbcTemplate jdbcTemplate, QueryValidator validator) {
         this.jdbcTemplate = jdbcTemplate;
+        this.validator = validator;
     }
 
     @Override
     public QueryResponse execute(String query) {
         String trimmed = query.trim();
-        if (!trimmed.toUpperCase().startsWith("SELECT")) {
-            throw new IllegalArgumentException("Only SELECT queries are allowed");
-        }
+
+        validator.validate(trimmed);
+
+        String safeQuery = enforceLimit(trimmed);
 
         long start = System.currentTimeMillis();
 
-        List<Map<String, Object>> rows = jdbcTemplate.queryForList(trimmed);
+        List<Map<String, Object>> rows;
+        try {
+            rows = jdbcTemplate.queryForList(safeQuery);
+        } catch (Exception e) {
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("timeout")) {
+                throw new IllegalArgumentException(
+                    "Query timed out after " + QUERY_TIMEOUT_SECONDS + " seconds. " +
+                    "Try simplifying your query or adding a LIMIT clause."
+                );
+            }
+            throw new IllegalArgumentException(
+                "Error executing SQL query: " + (msg != null ? msg : "Unknown error")
+            );
+        }
 
         long elapsed = System.currentTimeMillis() - start;
 
@@ -41,6 +66,16 @@ public class SqlQueryExecutor implements QueryExecutor {
         }
 
         return new QueryResponse(rows, tables, columns, rows.size(), elapsed, "SQL");
+    }
+
+    String enforceLimit(String sql) {
+        if (HAS_LIMIT.matcher(sql).find()) {
+            return sql;
+        }
+        if (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1);
+        }
+        return sql + " LIMIT " + MAX_ROWS;
     }
 
     List<String> extractTables(String sql) {

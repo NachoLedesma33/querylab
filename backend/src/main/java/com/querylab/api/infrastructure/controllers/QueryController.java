@@ -31,7 +31,7 @@ public class QueryController {
 
         if (query == null || query.trim().isEmpty()) {
             return ResponseEntity.badRequest()
-                .body(Map.of("message", "Query must not be empty"));
+                .body(Map.of("message", "Please enter a SQL or GraphQL query before executing."));
         }
 
         try {
@@ -41,9 +41,15 @@ public class QueryController {
             };
             QueryResponse response = executor.execute(query.trim());
             return ResponseEntity.ok(response);
+        } catch (SecurityException e) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("message", "⚠ Security: " + e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                 .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                .body(Map.of("message", "Unexpected error: " + e.getMessage()));
         }
     }
 }

@@ -3,10 +3,10 @@ import { QueryEditor } from "@/components/layout/QueryEditor"
 import { ResultCanvas } from "@/components/layout/ResultCanvas"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { Button } from "@/components/ui/button"
-import { Terminal } from "lucide-react"
+import { Terminal, RotateCcw } from "lucide-react"
 
 function App() {
-  const { query, dialect, status, result, error, setQuery, setDialect, execute } = useQueryLab()
+  const { query, dialect, status, result, error, setQuery, setDialect, execute, resetDatabase } = useQueryLab()
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -29,6 +29,17 @@ function App() {
         <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-auto">
           {dialect} Playground
         </span>
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={resetDatabase}
+          aria-label="Reset database"
+          title="Restore database to original seed data"
+          className="text-muted-foreground hover:text-orange-400"
+        >
+          <RotateCcw className="size-3.5" />
+          Reset DB
+        </Button>
       </header>
 
       <div className="flex flex-1 min-h-0">

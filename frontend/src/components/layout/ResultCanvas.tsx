@@ -75,14 +75,32 @@ function LoadingState() {
 }
 
 function ErrorState({ message }: { message: string }) {
+  const isSecurity = message.includes("⚠ Security:") || message.toLowerCase().includes("forbidden")
+  const isTimeout = message.toLowerCase().includes("timeout")
+  const isTooMany = message.toLowerCase().includes("too many requests")
+  const isReset = message.startsWith("Reset failed")
+
+  let suggestion = ""
+  if (isSecurity) suggestion = "Try a simple SELECT query like: SELECT * FROM movies LIMIT 5"
+  else if (isTimeout) suggestion = "Add a LIMIT clause to reduce the result set."
+  else if (isTooMany) suggestion = "Wait a moment and try again."
+  else if (isReset) suggestion = "The database reset encountered an error. Try again in a moment."
+
   return (
     <div className="p-6">
-      <Alert variant="destructive">
-        <AlertCircle className="size-4" />
-        <AlertTitle>SQL Error</AlertTitle>
+      <Alert variant={isSecurity ? "default" : "destructive"}>
+        <AlertCircle className={isSecurity ? "size-4 text-orange-400" : "size-4"} />
+        <AlertTitle>
+          {isSecurity ? "⚠ Query Blocked" : isTimeout ? "⏱ Query Timeout" : isTooMany ? "⏳ Too Many Requests" : "Error"}
+        </AlertTitle>
         <AlertDescription className="font-mono text-sm mt-1">
           {message}
         </AlertDescription>
+        {suggestion && (
+          <p className="text-xs text-muted-foreground mt-2 border-t border-border/50 pt-2">
+            💡 {suggestion}
+          </p>
+        )}
       </Alert>
     </div>
   )
