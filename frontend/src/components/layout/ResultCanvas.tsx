@@ -17,16 +17,56 @@ import {
   Timer,
   ArrowRight,
   GitBranch,
+  FileJson,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react"
 
 interface ResultCanvasProps {
   status: "idle" | "loading" | "error" | "success"
   result: QueryResponse | null
+  results: QueryResponse[]
+  currentResultIndex: number
   error: string | null
   onExecute: () => void
+  onSelectResult: (index: number) => void
 }
 
 const stepOrder: PipelineStep[] = ["scan", "join", "filter"]
+
+function download(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportCsv(result: QueryResponse) {
+  const columns = result.columns.length > 0
+    ? result.columns
+    : result.result.length > 0 ? Object.keys(result.result[0]) : []
+  const header = columns.join(",")
+  const rows = result.result.map((r) => columns.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","))
+  download("resultados.csv", [header, ...rows].join("\n"))
+}
+
+function exportJson(result: QueryResponse) {
+  const content = JSON.stringify(result.result, null, 2)
+  download("resultados.json", content)
+}
+
+function exportMarkdown(result: QueryResponse) {
+  const columns = result.columns.length > 0
+    ? result.columns
+    : result.result.length > 0 ? Object.keys(result.result[0]) : []
+  const header = `| ${columns.join(" | ")} |`
+  const separator = `| ${columns.map(() => "---").join(" | ")} |`
+  const rows = result.result.map((r) => `| ${columns.map((c) => String(r[c] ?? "")).join(" | ")} |`)
+  download("resultados.md", [header, separator, ...rows].join("\n"))
+}
 
 function EmptyState({ onExecute }: { onExecute: () => void }) {
   return (
@@ -44,6 +84,9 @@ function EmptyState({ onExecute }: { onExecute: () => void }) {
             Ejecutar
           </kbd>{" "}
           para ver los resultados aquí.
+        </p>
+        <p className="text-xs text-muted-foreground mt-2">
+          También podés separar varias consultas con <kbd className="px-1 rounded bg-muted text-[10px] font-mono">;</kbd> y se mostrarán en pestañas.
         </p>
       </div>
       <Button size="sm" onClick={onExecute} aria-label="Ejecutar consulta">
@@ -75,7 +118,7 @@ function LoadingState() {
 }
 
 function ErrorState({ message }: { message: string }) {
-  const isSecurity = message.includes("⚠ Security:") || message.toLowerCase().includes("forbidden") || message.toLowerCase().includes("bloqueada")
+  const isSecurity = message.includes("⚠ Seguridad:") || message.toLowerCase().includes("forbidden") || message.toLowerCase().includes("bloqueada")
   const isTimeout = message.toLowerCase().includes("timeout") || message.toLowerCase().includes("tiempo")
   const isTooMany = message.toLowerCase().includes("too many requests") || message.toLowerCase().includes("demasiadas")
   const isReset = message.startsWith("Reset failed") || message.startsWith("Error al restaurar")
@@ -106,7 +149,12 @@ function ErrorState({ message }: { message: string }) {
   )
 }
 
-function SuccessState({ result }: { result: QueryResponse }) {
+function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
+  result: QueryResponse
+  results: QueryResponse[]
+  currentResultIndex: number
+  onSelectResult: (index: number) => void
+}) {
   const columns = result.columns.length > 0
     ? result.columns
     : result.result.length > 0
@@ -116,6 +164,24 @@ function SuccessState({ result }: { result: QueryResponse }) {
   return (
     <div className="flex flex-col h-full" role="region" aria-label="Resultados de la consulta">
       <div className="flex items-center gap-3 px-4 h-10 border-b border-border shrink-0">
+        {results.length > 1 && (
+          <div className="flex items-center gap-0.5 mr-2 border-r border-border pr-2">
+            {results.map((r, i) => (
+              <button
+                key={i}
+                onClick={() => onSelectResult(i)}
+                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${
+                  i === currentResultIndex
+                    ? "bg-indigo-500/20 text-indigo-300 font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                #{i + 1}
+                <span className="ml-1 text-[10px] text-muted-foreground">({r.rows})</span>
+              </button>
+            ))}
+          </div>
+        )}
         <Badge variant="secondary" className="gap-1">
           <Table2 className="size-3" />
           {result.rows} fila{result.rows !== 1 ? "s" : ""}
@@ -137,6 +203,17 @@ function SuccessState({ result }: { result: QueryResponse }) {
             ))}
           </div>
         )}
+        <div className="flex items-center gap-0.5">
+          <Button variant="ghost" size="xs" onClick={() => exportCsv(result)} aria-label="Exportar CSV" title="Exportar CSV">
+            <FileSpreadsheet className="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="xs" onClick={() => exportJson(result)} aria-label="Exportar JSON" title="Exportar JSON">
+            <FileJson className="size-3.5" />
+          </Button>
+          <Button variant="ghost" size="xs" onClick={() => exportMarkdown(result)} aria-label="Exportar Markdown" title="Exportar Markdown">
+            <FileText className="size-3.5" />
+          </Button>
+        </div>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-4">
@@ -193,8 +270,11 @@ function SuccessState({ result }: { result: QueryResponse }) {
 export function ResultCanvas({
   status,
   result,
+  results,
+  currentResultIndex,
   error,
   onExecute,
+  onSelectResult,
 }: ResultCanvasProps) {
   const [view, setView] = useState<"results" | "graph">("results")
   const [pipeline, setPipeline] = useState<PipelineState>({
@@ -286,7 +366,12 @@ export function ResultCanvas({
       ) : status === "error" && error ? (
         <ErrorState message={error} />
       ) : status === "success" && result ? (
-        <SuccessState result={result} />
+        <SuccessState
+          result={result}
+          results={results}
+          currentResultIndex={currentResultIndex}
+          onSelectResult={onSelectResult}
+        />
       ) : (
         <EmptyState onExecute={onExecute} />
       )}

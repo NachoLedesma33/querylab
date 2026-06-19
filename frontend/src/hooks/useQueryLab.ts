@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react"
 import type { QueryResponse } from "@/types"
+import { useQueryHistory } from "./useQueryHistory"
 
 type Status = "idle" | "loading" | "error" | "success"
 type Dialect = "SQL" | "GraphQL"
@@ -12,9 +13,12 @@ interface QueryLabState {
   status: Status
   result: QueryResponse | null
   error: string | null
+  results: QueryResponse[]
+  currentResultIndex: number
 }
 
 export function useQueryLab() {
+  const { entries, addEntry, clearHistory } = useQueryHistory()
   const [state, setState] = useState<QueryLabState>({
     query: "",
     dialect: "SQL",
@@ -22,6 +26,8 @@ export function useQueryLab() {
     status: "idle",
     result: null,
     error: null,
+    results: [],
+    currentResultIndex: 0,
   })
 
   const setQuery = useCallback((query: string) => {
@@ -36,24 +42,35 @@ export function useQueryLab() {
     setState((prev) => ({ ...prev, sqlDialect }))
   }, [])
 
-  const execute = useCallback(async () => {
+  const selectResult = useCallback((index: number) => {
     setState((prev) => ({
       ...prev,
+      currentResultIndex: index,
+      result: prev.results[index] ?? null,
+    }))
+  }, [])
+
+  const setAndExecute = useCallback(async (query: string) => {
+    setState((prev) => ({ ...prev, query }))
+    const baseUrl = import.meta.env.VITE_API_URL ?? ""
+    const dialect = state.dialect
+    const sqlDialect = state.sqlDialect
+
+    setState((prev) => ({
+      ...prev,
+      query,
       status: "loading",
       error: null,
       result: null,
+      results: [],
+      currentResultIndex: 0,
     }))
 
     try {
-      const baseUrl = import.meta.env.VITE_API_URL ?? ""
       const res = await fetch(`${baseUrl}/api/v1/query/execute`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: state.query,
-          dialect: state.dialect,
-          sqlDialect: state.sqlDialect,
-        }),
+        body: JSON.stringify({ query, dialect, sqlDialect }),
       })
 
       if (!res.ok) {
@@ -71,19 +88,104 @@ export function useQueryLab() {
       }
 
       const data: QueryResponse = await res.json()
+      addEntry(query, dialect, sqlDialect)
       setState((prev) => ({
         ...prev,
         status: "success",
         result: data,
+        results: [data],
+        currentResultIndex: 0,
       }))
     } catch (err) {
       setState((prev) => ({
         ...prev,
         status: "error",
         error: err instanceof Error ? err.message : "Error desconocido",
+        results: [],
       }))
     }
-  }, [state.query, state.dialect, state.sqlDialect])
+  }, [state.dialect, state.sqlDialect, addEntry])
+
+  const execute = useCallback(async () => {
+    const rawQuery = state.query.trim()
+    if (!rawQuery) return
+
+    const statements = rawQuery
+      .split(";")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+
+    if (statements.length === 0) return
+
+    setState((prev) => ({
+      ...prev,
+      status: "loading",
+      error: null,
+      result: null,
+      results: [],
+      currentResultIndex: 0,
+    }))
+
+    const baseUrl = import.meta.env.VITE_API_URL ?? ""
+    const results: QueryResponse[] = []
+    let firstError: string | null = null
+
+    for (const stmt of statements) {
+      try {
+        const res = await fetch(`${baseUrl}/api/v1/query/execute`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: stmt,
+            dialect: state.dialect,
+            sqlDialect: state.sqlDialect,
+          }),
+        })
+
+        if (!res.ok) {
+          let msg: string
+          try {
+            const body = await res.json()
+            msg = body?.message ?? `Error del servidor: ${res.status}`
+          } catch {
+            const text = await res.text().catch(() => null)
+            msg = text ? `Error ${res.status}: ${text.slice(0, 300)}` : `Error del servidor: ${res.status}`
+          }
+          if (!firstError) firstError = `Error en sentencia ${results.length + 1}: ${msg}`
+          break
+        }
+
+        const data: QueryResponse = await res.json()
+        results.push(data)
+      } catch (err) {
+        if (!firstError) firstError = `Error en sentencia ${results.length + 1}: ${err instanceof Error ? err.message : "Error desconocido"}`
+        break
+      }
+    }
+
+    if (firstError && results.length === 0) {
+      setState((prev) => ({
+        ...prev,
+        status: "error",
+        error: firstError,
+        results: [],
+      }))
+      return
+    }
+
+    if (results.length > 0) {
+      addEntry(rawQuery, state.dialect, state.sqlDialect)
+    }
+
+    setState((prev) => ({
+      ...prev,
+      status: firstError ? "error" : "success",
+      result: results[0] ?? null,
+      results,
+      currentResultIndex: 0,
+      error: firstError,
+    }))
+  }, [state.query, state.dialect, state.sqlDialect, addEntry])
 
   const resetDatabase = useCallback(async () => {
     const confirmed = window.confirm(
@@ -108,6 +210,7 @@ export function useQueryLab() {
         ...prev,
         status: "success",
         result: null,
+        results: [],
         error: null,
       }))
       alert(body.message)
@@ -122,10 +225,14 @@ export function useQueryLab() {
 
   return {
     ...state,
+    history: entries,
+    clearHistory,
     setQuery,
     setDialect,
     setSqlDialect,
+    setAndExecute,
     execute,
+    selectResult,
     resetDatabase,
   }
 }

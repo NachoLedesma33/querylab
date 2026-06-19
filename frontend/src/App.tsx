@@ -2,13 +2,19 @@ import { Sidebar } from "@/components/layout/Sidebar"
 import { QueryEditor } from "@/components/layout/QueryEditor"
 import { ResultCanvas } from "@/components/layout/ResultCanvas"
 import { useQueryLab } from "@/hooks/useQueryLab"
+import { useTheme } from "@/hooks/useTheme"
 import { Button } from "@/components/ui/button"
-import { Terminal, RotateCcw } from "lucide-react"
+import { Terminal, RotateCcw, Sun, Moon } from "lucide-react"
 
 const SQL_DIALECTS = ["H2", "MySQL", "PostgreSQL", "SQLServer", "Oracle"] as const
 
 function App() {
-  const { query, dialect, sqlDialect, status, result, error, setQuery, setDialect, setSqlDialect, execute, resetDatabase } = useQueryLab()
+  const {
+    query, dialect, sqlDialect, status, result, error, results, currentResultIndex,
+    history, clearHistory,
+    setQuery, setDialect, setSqlDialect, setAndExecute, execute, selectResult, resetDatabase,
+  } = useQueryLab()
+  const { theme, toggleTheme } = useTheme()
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -50,9 +56,19 @@ function App() {
         <Button
           variant="ghost"
           size="xs"
+          onClick={toggleTheme}
+          aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
+          title={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
+          className="text-muted-foreground hover:text-amber-400"
+        >
+          {theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+        </Button>
+        <Button
+          variant="ghost"
+          size="xs"
           onClick={resetDatabase}
           aria-label="Restaurar base de datos"
-          title="Restaurar la base de datos a su estado original con todos los datos iniciales"
+          title="Restaurar la base de datos a su estado original"
           className="text-muted-foreground hover:text-orange-400"
         >
           <RotateCcw className="size-3.5" />
@@ -61,7 +77,12 @@ function App() {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        <Sidebar />
+        <Sidebar
+          onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName} LIMIT 5`)}
+          history={history}
+          onSelectHistory={(query) => setAndExecute(query)}
+          onClearHistory={clearHistory}
+        />
 
         <main className="flex-1 flex flex-col min-w-0">
           <div className="h-1/2 min-h-[120px]">
@@ -77,8 +98,11 @@ function App() {
             <ResultCanvas
               status={status}
               result={result}
+              results={results}
+              currentResultIndex={currentResultIndex}
               error={error}
               onExecute={execute}
+              onSelectResult={selectResult}
             />
           </div>
         </main>
