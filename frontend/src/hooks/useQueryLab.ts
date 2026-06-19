@@ -2,9 +2,11 @@ import { useState, useCallback } from "react"
 import type { QueryResponse } from "@/types"
 
 type Status = "idle" | "loading" | "error" | "success"
+type Dialect = "SQL" | "GraphQL"
 
 interface QueryLabState {
   query: string
+  dialect: Dialect
   status: Status
   result: QueryResponse | null
   error: string | null
@@ -13,6 +15,7 @@ interface QueryLabState {
 export function useQueryLab() {
   const [state, setState] = useState<QueryLabState>({
     query: "",
+    dialect: "SQL",
     status: "idle",
     result: null,
     error: null,
@@ -20,6 +23,10 @@ export function useQueryLab() {
 
   const setQuery = useCallback((query: string) => {
     setState((prev) => ({ ...prev, query }))
+  }, [])
+
+  const setDialect = useCallback((dialect: Dialect) => {
+    setState((prev) => ({ ...prev, dialect }))
   }, [])
 
   const execute = useCallback(async () => {
@@ -34,7 +41,7 @@ export function useQueryLab() {
       const res = await fetch("/api/v1/query/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: state.query, dialect: "SQL" }),
+        body: JSON.stringify({ query: state.query, dialect: state.dialect }),
       })
 
       if (!res.ok) {
@@ -55,11 +62,12 @@ export function useQueryLab() {
         error: err instanceof Error ? err.message : "Unknown error",
       }))
     }
-  }, [state.query])
+  }, [state.query, state.dialect])
 
   return {
     ...state,
     setQuery,
+    setDialect,
     execute,
   }
 }
