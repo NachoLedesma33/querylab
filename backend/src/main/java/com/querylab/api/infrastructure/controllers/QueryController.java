@@ -28,6 +28,7 @@ public class QueryController {
     public ResponseEntity<?> execute(@RequestBody Map<String, String> request) {
         String query = request.get("query");
         String dialect = request.getOrDefault("dialect", "SQL");
+        String sqlDialect = request.getOrDefault("sqlDialect", "H2");
 
         if (query == null || query.trim().isEmpty()) {
             return ResponseEntity.badRequest()
@@ -39,17 +40,17 @@ public class QueryController {
                 case "GRAPHQL" -> graphqlExecutor;
                 default -> sqlExecutor;
             };
-            QueryResponse response = executor.execute(query.trim());
+            QueryResponse response = executor.execute(query.trim(), sqlDialect);
             return ResponseEntity.ok(response);
         } catch (SecurityException e) {
             return ResponseEntity.badRequest()
-                .body(Map.of("message", "⚠ Security: " + e.getMessage()));
+                .body(Map.of("message", "⚠ Seguridad: " + e.getMessage()));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                 .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.internalServerError()
-                .body(Map.of("message", "Unexpected error: " + e.getMessage()));
+                .body(Map.of("message", "Error inesperado: " + e.getMessage()));
         }
     }
 }

@@ -5,8 +5,10 @@ import { useQueryLab } from "@/hooks/useQueryLab"
 import { Button } from "@/components/ui/button"
 import { Terminal, RotateCcw } from "lucide-react"
 
+const SQL_DIALECTS = ["H2", "MySQL", "PostgreSQL", "SQLServer", "Oracle"] as const
+
 function App() {
-  const { query, dialect, status, result, error, setQuery, setDialect, execute, resetDatabase } = useQueryLab()
+  const { query, dialect, sqlDialect, status, result, error, setQuery, setDialect, setSqlDialect, execute, resetDatabase } = useQueryLab()
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -26,8 +28,24 @@ function App() {
             </Button>
           ))}
         </div>
+        {dialect === "SQL" && (
+          <div className="flex items-center gap-1 ml-1 border-l border-border pl-2">
+            {SQL_DIALECTS.map((d) => (
+              <Button
+                key={d}
+                variant={sqlDialect === d ? "secondary" : "ghost"}
+                size="xs"
+                onClick={() => setSqlDialect(d)}
+                aria-pressed={sqlDialect === d}
+                className="text-[11px] px-1.5"
+              >
+                {d}
+              </Button>
+            ))}
+          </div>
+        )}
         <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-auto">
-          {dialect === "SQL" ? "Entorno SQL" : "Entorno GraphQL"}
+          {dialect === "SQL" ? `Entorno ${sqlDialect}` : "Entorno GraphQL"}
         </span>
         <Button
           variant="ghost"

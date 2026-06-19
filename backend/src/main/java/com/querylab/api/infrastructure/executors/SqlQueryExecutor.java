@@ -25,6 +25,15 @@ public class SqlQueryExecutor implements QueryExecutor {
         "\\bLIMIT\\s+\\d+", Pattern.CASE_INSENSITIVE
     );
 
+    private static final Map<String, String> H2_MODES = Map.of(
+        "MYSQL", "MySQL",
+        "POSTGRESQL", "PostgreSQL",
+        "SQLSERVER", "MSSQLServer",
+        "ORACLE", "Oracle"
+    );
+
+    private String currentDialect = "H2";
+
     public SqlQueryExecutor(JdbcTemplate jdbcTemplate, QueryValidator validator) {
         this.jdbcTemplate = jdbcTemplate;
         this.validator = validator;
@@ -32,9 +41,16 @@ public class SqlQueryExecutor implements QueryExecutor {
 
     @Override
     public QueryResponse execute(String query) {
+        return execute(query, "H2");
+    }
+
+    @Override
+    public QueryResponse execute(String query, String sqlDialect) {
         String trimmed = query.trim();
 
         validator.validate(trimmed);
+
+        applyDialect(sqlDialect);
 
         String safeQuery = enforceLimit(trimmed);
 
@@ -66,6 +82,21 @@ public class SqlQueryExecutor implements QueryExecutor {
         }
 
         return new QueryResponse(rows, tables, columns, rows.size(), elapsed, "SQL");
+    }
+
+    private void applyDialect(String sqlDialect) {
+        if (sqlDialect == null) sqlDialect = "H2";
+        String key = sqlDialect.toUpperCase();
+
+        if (key.equals(currentDialect)) return;
+
+        String h2Mode = H2_MODES.get(key);
+        if (h2Mode != null) {
+            jdbcTemplate.execute("SET MODE " + h2Mode);
+        } else {
+            jdbcTemplate.execute("SET MODE Regular");
+        }
+        currentDialect = key;
     }
 
     String enforceLimit(String sql) {

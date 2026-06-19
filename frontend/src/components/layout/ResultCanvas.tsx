@@ -262,7 +262,7 @@ export function ResultCanvas({
       </div>
 
       {view === "graph" ? (
-        <>
+        <div className="flex flex-col flex-1 min-h-0">
           {status === "success" && result && (
             <StepPipeline
               pipeline={pipeline}
@@ -272,11 +272,13 @@ export function ResultCanvas({
               tables={tables}
             />
           )}
-          <QueryVisualizer
-            pipeline={pipeline}
-            tables={tables}
-          />
-        </>
+          <div className="flex-1 min-h-0">
+            <QueryVisualizer
+              pipeline={pipeline}
+              tables={tables}
+            />
+          </div>
+        </div>
       ) : status === "idle" ? (
         <EmptyState onExecute={onExecute} />
       ) : status === "loading" ? (

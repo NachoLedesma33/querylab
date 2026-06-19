@@ -4,4 +4,8 @@ import com.querylab.api.domain.models.QueryResponse;
 
 public interface QueryExecutor {
     QueryResponse execute(String query);
+
+    default QueryResponse execute(String query, String sqlDialect) {
+        return execute(query);
+    }
 }
