@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import { QueryVisualizer } from "@/components/flow/QueryVisualizer"
 import type { QueryResponse } from "@/types"
 import {
   Brain,
@@ -12,6 +14,7 @@ import {
   Table2,
   Timer,
   ArrowRight,
+  GitBranch,
 } from "lucide-react"
 
 interface ResultCanvasProps {
@@ -171,16 +174,48 @@ export function ResultCanvas({
   error,
   onExecute,
 }: ResultCanvasProps) {
+  const [view, setView] = useState<"results" | "graph">("results")
+
   return (
     <Card
       className="flex-1 min-h-0 rounded-none border-0 border-t border-border bg-canvas overflow-hidden"
       role="region"
       aria-label="Query result panel"
     >
-      {status === "idle" && <EmptyState onExecute={onExecute} />}
-      {status === "loading" && <LoadingState />}
-      {status === "error" && error && <ErrorState message={error} />}
-      {status === "success" && result && <SuccessState result={result} />}
+      <div className="flex items-center gap-1 px-4 h-9 border-b border-border bg-muted/20 shrink-0">
+        <Button
+          variant={view === "results" ? "secondary" : "ghost"}
+          size="xs"
+          onClick={() => setView("results")}
+          aria-pressed={view === "results"}
+        >
+          <Table2 className="size-3.5" />
+          Results
+        </Button>
+        <Button
+          variant={view === "graph" ? "secondary" : "ghost"}
+          size="xs"
+          onClick={() => setView("graph")}
+          aria-pressed={view === "graph"}
+        >
+          <GitBranch className="size-3.5" />
+          Schema Graph
+        </Button>
+      </div>
+
+      {view === "graph" ? (
+        <QueryVisualizer />
+      ) : status === "idle" ? (
+        <EmptyState onExecute={onExecute} />
+      ) : status === "loading" ? (
+        <LoadingState />
+      ) : status === "error" && error ? (
+        <ErrorState message={error} />
+      ) : status === "success" && result ? (
+        <SuccessState result={result} />
+      ) : (
+        <EmptyState onExecute={onExecute} />
+      )}
     </Card>
   )
 }
