@@ -30,6 +30,10 @@ public class GraphqlQueryExecutor implements QueryExecutor {
         List<String> tables = List.of(parsed.tableName);
         List<String> columns = parsed.fields;
 
+        if (!rows.isEmpty()) {
+            columns = new ArrayList<>(rows.get(0).keySet());
+        }
+
         return new QueryResponse(rows, tables, columns, rows.size(), elapsed, "GraphQL");
     }
 

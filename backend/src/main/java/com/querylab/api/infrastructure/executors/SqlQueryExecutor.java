@@ -36,6 +36,10 @@ public class SqlQueryExecutor implements QueryExecutor {
         List<String> tables = extractTables(trimmed);
         List<String> columns = extractColumns(trimmed);
 
+        if (columns.size() == 1 && columns.get(0).equals("*") && !rows.isEmpty()) {
+            columns = new ArrayList<>(rows.get(0).keySet());
+        }
+
         return new QueryResponse(rows, tables, columns, rows.size(), elapsed, "SQL");
     }
 
