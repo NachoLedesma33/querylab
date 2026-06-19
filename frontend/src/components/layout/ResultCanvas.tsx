@@ -36,19 +36,19 @@ function EmptyState({ onExecute }: { onExecute: () => void }) {
       </div>
       <div>
         <h3 className="text-base font-semibold text-foreground">
-          Ready to query
+          Listo para consultar
         </h3>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-          Write a SQL query in the editor above and click{" "}
+          Escribí una consulta SQL en el editor de arriba y presioná{" "}
           <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">
-            Run
+            Ejecutar
           </kbd>{" "}
-          to see results here.
+          para ver los resultados aquí.
         </p>
       </div>
-      <Button size="sm" onClick={onExecute} aria-label="Run query">
+      <Button size="sm" onClick={onExecute} aria-label="Ejecutar consulta">
         <Play className="size-3.5" />
-        Run query
+        Ejecutar consulta
       </Button>
     </div>
   )
@@ -56,7 +56,7 @@ function EmptyState({ onExecute }: { onExecute: () => void }) {
 
 function LoadingState() {
   return (
-    <div className="p-6 space-y-4" role="status" aria-label="Loading query results">
+      <div className="p-6 space-y-4" role="status" aria-label="Cargando resultados">
       <div className="flex items-center gap-3">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-4 w-16" />
@@ -75,23 +75,23 @@ function LoadingState() {
 }
 
 function ErrorState({ message }: { message: string }) {
-  const isSecurity = message.includes("⚠ Security:") || message.toLowerCase().includes("forbidden")
-  const isTimeout = message.toLowerCase().includes("timeout")
-  const isTooMany = message.toLowerCase().includes("too many requests")
-  const isReset = message.startsWith("Reset failed")
+  const isSecurity = message.includes("⚠ Security:") || message.toLowerCase().includes("forbidden") || message.toLowerCase().includes("bloqueada")
+  const isTimeout = message.toLowerCase().includes("timeout") || message.toLowerCase().includes("tiempo")
+  const isTooMany = message.toLowerCase().includes("too many requests") || message.toLowerCase().includes("demasiadas")
+  const isReset = message.startsWith("Reset failed") || message.startsWith("Error al restaurar")
 
   let suggestion = ""
-  if (isSecurity) suggestion = "Try a simple SELECT query like: SELECT * FROM movies LIMIT 5"
-  else if (isTimeout) suggestion = "Add a LIMIT clause to reduce the result set."
-  else if (isTooMany) suggestion = "Wait a moment and try again."
-  else if (isReset) suggestion = "The database reset encountered an error. Try again in a moment."
+  if (isSecurity) suggestion = "Probá con una consulta SELECT simple como: SELECT * FROM movies LIMIT 5"
+  else if (isTimeout) suggestion = "Agregá una cláusula LIMIT para reducir la cantidad de resultados."
+  else if (isTooMany) suggestion = "Esperá un momento y volvé a intentar."
+  else if (isReset) suggestion = "Ocurrió un error al restaurar la base de datos. Intentá de nuevo en un momento."
 
   return (
     <div className="p-6">
       <Alert variant={isSecurity ? "default" : "destructive"}>
         <AlertCircle className={isSecurity ? "size-4 text-orange-400" : "size-4"} />
         <AlertTitle>
-          {isSecurity ? "⚠ Query Blocked" : isTimeout ? "⏱ Query Timeout" : isTooMany ? "⏳ Too Many Requests" : "Error"}
+          {isSecurity ? "⚠ Consulta bloqueada" : isTimeout ? "⏱ Tiempo agotado" : isTooMany ? "⏳ Demasiadas solicitudes" : "Error"}
         </AlertTitle>
         <AlertDescription className="font-mono text-sm mt-1">
           {message}
@@ -114,11 +114,11 @@ function SuccessState({ result }: { result: QueryResponse }) {
       : []
 
   return (
-    <div className="flex flex-col h-full" role="region" aria-label="Query results">
+    <div className="flex flex-col h-full" role="region" aria-label="Resultados de la consulta">
       <div className="flex items-center gap-3 px-4 h-10 border-b border-border shrink-0">
         <Badge variant="secondary" className="gap-1">
           <Table2 className="size-3" />
-          {result.rows} row{result.rows !== 1 ? "s" : ""}
+          {result.rows} fila{result.rows !== 1 ? "s" : ""}
         </Badge>
         <Badge variant="outline" className="gap-1">
           <Timer className="size-3" />
@@ -126,7 +126,7 @@ function SuccessState({ result }: { result: QueryResponse }) {
         </Badge>
         {result.tables.length > 0 && (
           <div className="flex items-center gap-1 text-xs text-muted-foreground ml-auto">
-            <span>Tables:</span>
+            <span>Tablas:</span>
             {result.tables.map((t, i) => (
               <span key={t}>
                 <code className="text-indigo-400">{t}</code>
@@ -142,14 +142,14 @@ function SuccessState({ result }: { result: QueryResponse }) {
         <div className="p-4">
           {result.result.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
-              Query executed successfully. No rows returned.
+              Consulta ejecutada correctamente. No se devolvieron filas.
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table
                 className="w-full text-sm border-collapse"
                 role="table"
-                aria-label="Query result set"
+                aria-label="Resultados de la consulta"
               >
                 <thead>
                   <tr className="border-b border-border">
@@ -238,7 +238,7 @@ export function ResultCanvas({
     <Card
       className="flex-1 min-h-0 rounded-none border-0 border-t border-border bg-canvas overflow-hidden"
       role="region"
-      aria-label="Query result panel"
+      aria-label="Panel de resultados"
     >
       <div className="flex items-center gap-1 px-4 h-9 border-b border-border bg-muted/20 shrink-0">
         <Button
@@ -248,7 +248,7 @@ export function ResultCanvas({
           aria-pressed={view === "results"}
         >
           <Table2 className="size-3.5" />
-          Results
+          Resultados
         </Button>
         <Button
           variant={view === "graph" ? "secondary" : "ghost"}
@@ -257,7 +257,7 @@ export function ResultCanvas({
           aria-pressed={view === "graph"}
         >
           <GitBranch className="size-3.5" />
-          Schema Graph
+          Grafo del esquema
         </Button>
       </div>
 

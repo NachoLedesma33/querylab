@@ -17,7 +17,7 @@ export function QueryEditor({ value, onChange, onExecute, loading }: QueryEditor
     editorRef.current = editor
     editor.addAction({
       id: "execute-query",
-      label: "Execute Query",
+      label: "Ejecutar consulta",
       keybindings: [2048 | 3],
       run: () => {
         onExecute()
@@ -33,18 +33,18 @@ export function QueryEditor({ value, onChange, onExecute, loading }: QueryEditor
   }, [onChange])
 
   return (
-    <div className="flex flex-col h-full bg-editor" role="region" aria-label="SQL query editor">
+    <div className="flex flex-col h-full bg-editor" role="region" aria-label="Editor de consultas SQL">
       <div className="flex items-center justify-between px-4 h-10 border-b border-border bg-muted/30 shrink-0">
-        <span className="text-xs font-medium text-muted-foreground">SQL Query</span>
+        <span className="text-xs font-medium text-muted-foreground">Consulta SQL</span>
         <div className="flex items-center gap-1">
           <span className="text-[10px] text-muted-foreground mr-1 hidden sm:inline">
-            Ctrl+Enter
+            Ctrl+Intro
           </span>
           <Button
             variant="ghost"
             size="xs"
             onClick={handleReset}
-            aria-label="Clear query"
+            aria-label="Limpiar consulta"
           >
             <RotateCcw className="size-3.5" />
           </Button>
@@ -52,10 +52,10 @@ export function QueryEditor({ value, onChange, onExecute, loading }: QueryEditor
             size="xs"
             onClick={onExecute}
             disabled={loading || !value.trim()}
-            aria-label="Execute query"
+            aria-label="Ejecutar consulta"
           >
             <Play className="size-3.5" />
-            Run
+            Ejecutar
           </Button>
         </div>
       </div>

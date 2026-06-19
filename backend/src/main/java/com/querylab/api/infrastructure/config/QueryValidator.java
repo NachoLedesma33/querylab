@@ -41,9 +41,9 @@ public class QueryValidator {
 
         if (!upper.startsWith("SELECT")) {
             throw new SecurityException(
-                "Only SELECT queries are allowed. " +
-                "Your query starts with \"" + trimmed.substring(0, Math.min(20, trimmed.length())) + "...\" " +
-                "which is not permitted for security reasons."
+                "Solo se permiten consultas SELECT. " +
+                "Tu consulta comienza con \"" + trimmed.substring(0, Math.min(20, trimmed.length())) + "...\" " +
+                "lo cual no está permitido por razones de seguridad."
             );
         }
 
@@ -51,17 +51,17 @@ public class QueryValidator {
             if (pattern.matcher(trimmed).find()) {
                 String matched = extractMatch(pattern, trimmed);
                 throw new SecurityException(
-                    "Forbidden operation detected: \"" + matched + "\". " +
-                    "This query lab only allows read-only SELECT queries. " +
-                    "Destructive operations like DROP, ALTER, INSERT, etc. are blocked."
+                    "Operación prohibida detectada: \"" + matched + "\". " +
+                    "QueryLab solo permite consultas SELECT de solo lectura. " +
+                    "Operaciones destructivas como DROP, ALTER, INSERT, etc. están bloqueadas."
                 );
             }
         }
 
         if (trimmed.length() > 10_000) {
             throw new SecurityException(
-                "Query too long (" + trimmed.length() + " characters). " +
-                "Maximum allowed is 10,000 characters."
+                "Consulta demasiado larga (" + trimmed.length() + " caracteres). " +
+                "El máximo permitido es de 10.000 caracteres."
             );
         }
     }

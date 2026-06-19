@@ -12,9 +12,9 @@ interface StepPipelineProps {
 }
 
 const steps: { key: PipelineStep; label: string; icon: typeof Scan }[] = [
-  { key: "scan", label: "Scan", icon: Scan },
-  { key: "join", label: "Join", icon: Link },
-  { key: "filter", label: "Filter", icon: Filter },
+  { key: "scan", label: "Escanear", icon: Scan },
+  { key: "join", label: "Unir", icon: Link },
+  { key: "filter", label: "Filtrar", icon: Filter },
 ]
 
 export function StepPipeline({
@@ -49,7 +49,7 @@ export function StepPipeline({
 
       {tables.length > 0 && (
         <div className="flex items-center gap-1 text-[10px] text-muted-foreground ml-2">
-          <span className="text-muted-foreground/60">Tables:</span>
+          <span className="text-muted-foreground/60">Tablas:</span>
           {tables.map((t) => (
             <code key={t} className="text-indigo-400">{t}</code>
           ))}
@@ -58,19 +58,19 @@ export function StepPipeline({
 
       <div className="ml-auto flex items-center gap-1">
         {!pipeline.active ? (
-          <Button size="xs" onClick={onStart} aria-label="Start animation pipeline">
+          <Button size="xs" onClick={onStart} aria-label="Iniciar animación del pipeline">
             <Play className="size-3" />
-            Animate
+            Animar
           </Button>
         ) : (
           <>
-            <Button size="xs" onClick={onNext} aria-label="Next step">
+            <Button size="xs" onClick={onNext} aria-label="Siguiente paso">
               <SkipForward className="size-3" />
-              Next
+              Siguiente
             </Button>
             {pipeline.currentStep === "filter" && (
-              <Button size="xs" variant="outline" onClick={onReset} aria-label="Reset pipeline">
-                Reset
+              <Button size="xs" variant="outline" onClick={onReset} aria-label="Reiniciar pipeline">
+                Reiniciar
               </Button>
             )}
           </>

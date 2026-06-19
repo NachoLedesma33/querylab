@@ -38,8 +38,8 @@ public class RateLimitInterceptor implements HandlerInterceptor {
             response.setStatus(429);
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
-            String body = "{\"message\":\"Too many requests. You can execute up to " + MAX_REQUESTS +
-                " queries per minute. Please wait a moment before trying again.\"}";
+            String body = "{\"message\":\"Demasiadas solicitudes. Podés ejecutar hasta " + MAX_REQUESTS +
+                " consultas por minuto. Esperá un momento y volvé a intentar.\"}";
             response.getWriter().write(body);
             return false;
         }

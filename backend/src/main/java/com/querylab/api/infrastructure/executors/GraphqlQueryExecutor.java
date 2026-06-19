@@ -37,11 +37,11 @@ public class GraphqlQueryExecutor implements QueryExecutor {
             String msg = e.getMessage();
             if (msg != null && msg.contains("timeout")) {
                 throw new IllegalArgumentException(
-                    "Query timed out. Try selecting fewer fields or adding filters."
+                    "La consulta agotó el tiempo de espera. Intentá seleccionar menos campos o agregar filtros."
                 );
             }
             throw new IllegalArgumentException(
-                "Error executing GraphQL query: " + (msg != null ? msg : "Unknown error")
+                "Error al ejecutar la consulta GraphQL: " + (msg != null ? msg : "Error desconocido")
             );
         }
 
@@ -69,10 +69,10 @@ public class GraphqlQueryExecutor implements QueryExecutor {
         Matcher matcher = queryPattern.matcher(trimmed);
         if (!matcher.matches()) {
             throw new IllegalArgumentException(
-                "Invalid GraphQL query format.\n\n" +
-                "Expected: { tableName { field1 field2 } }\n" +
-                "Example: { movies { title year } }\n" +
-                "With filter: { users(id: 1) { name email } }"
+                "Formato de consulta GraphQL inválido.\n\n" +
+                "Formato esperado: { nombreTabla { campo1 campo2 } }\n" +
+                "Ejemplo: { movies { title year } }\n" +
+                "Con filtro: { users(id: 1) { name email } }"
             );
         }
 

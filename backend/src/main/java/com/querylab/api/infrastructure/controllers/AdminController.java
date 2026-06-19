@@ -36,11 +36,11 @@ public class AdminController {
             rateLimiter.reset();
 
             return ResponseEntity.ok(Map.of(
-                "message", "Database reset successful! All schema and seed data have been restored."
+                "message", "Base de datos restaurada correctamente. Todos los datos iniciales han sido recuperados."
             ));
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(Map.of(
-                "message", "Failed to reset database: " + e.getMessage()
+                "message", "Error al restaurar la base de datos: " + e.getMessage()
             ));
         }
     }

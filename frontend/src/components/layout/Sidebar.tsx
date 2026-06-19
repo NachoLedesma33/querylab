@@ -71,7 +71,7 @@ function SchemaTable({ table }: { table: TableSchema }) {
         className="w-full justify-start gap-2 text-sm font-normal"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        aria-label={`Toggle ${table.name} columns`}
+        aria-label={`${open ? "Ocultar" : "Mostrar"} columnas de ${table.name}`}
       >
         {open ? (
           <ChevronDown className="size-3.5 text-muted-foreground" />
@@ -108,16 +108,16 @@ export function Sidebar() {
   return (
     <aside
       className="w-64 border-r border-border bg-sidebar shrink-0 flex flex-col"
-      aria-label="Database schema navigator"
+      aria-label="Navegador del esquema de base de datos"
     >
       <div className="flex items-center gap-2 px-4 h-12 border-b border-border">
         <Database className="size-4 text-indigo-400" />
         <span className="text-sm font-semibold text-sidebar-foreground">
-          Schema
+          Esquema
         </span>
       </div>
       <ScrollArea className="flex-1 p-2">
-        <nav role="tree" aria-label="Tables">
+        <nav role="tree" aria-label="Tablas">
           {defaultSchema.map((table) => (
             <SchemaTable key={table.name} table={table} />
           ))}

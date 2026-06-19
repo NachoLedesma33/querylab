@@ -31,7 +31,7 @@ public class QueryController {
 
         if (query == null || query.trim().isEmpty()) {
             return ResponseEntity.badRequest()
-                .body(Map.of("message", "Please enter a SQL or GraphQL query before executing."));
+                .body(Map.of("message", "Por favor, ingresá una consulta SQL o GraphQL antes de ejecutar."));
         }
 
         try {

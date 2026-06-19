@@ -156,7 +156,7 @@ export function QueryVisualizer({
   }, [])
 
   return (
-    <div className="w-full h-full" role="region" aria-label="Database schema visualization">
+    <div className="w-full h-full" role="region" aria-label="Visualización del esquema de base de datos">
       <ReactFlow
         nodes={nodes}
         edges={edges}

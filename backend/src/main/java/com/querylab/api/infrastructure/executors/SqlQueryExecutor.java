@@ -47,12 +47,12 @@ public class SqlQueryExecutor implements QueryExecutor {
             String msg = e.getMessage();
             if (msg != null && msg.contains("timeout")) {
                 throw new IllegalArgumentException(
-                    "Query timed out after " + QUERY_TIMEOUT_SECONDS + " seconds. " +
-                    "Try simplifying your query or adding a LIMIT clause."
+                    "La consulta agotó el tiempo de espera (" + QUERY_TIMEOUT_SECONDS + " segundos). " +
+                    "Intentá simplificarla o agregar una cláusula LIMIT."
                 );
             }
             throw new IllegalArgumentException(
-                "Error executing SQL query: " + (msg != null ? msg : "Unknown error")
+                "Error al ejecutar la consulta SQL: " + (msg != null ? msg : "Error desconocido")
             );
         }
 

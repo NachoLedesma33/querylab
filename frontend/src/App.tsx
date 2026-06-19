@@ -27,18 +27,18 @@ function App() {
           ))}
         </div>
         <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-auto">
-          {dialect} Playground
+          {dialect === "SQL" ? "Entorno SQL" : "Entorno GraphQL"}
         </span>
         <Button
           variant="ghost"
           size="xs"
           onClick={resetDatabase}
-          aria-label="Reset database"
-          title="Restore database to original seed data"
+          aria-label="Restaurar base de datos"
+          title="Restaurar la base de datos a su estado original con todos los datos iniciales"
           className="text-muted-foreground hover:text-orange-400"
         >
           <RotateCcw className="size-3.5" />
-          Reset DB
+          Restaurar BD
         </Button>
       </header>
 

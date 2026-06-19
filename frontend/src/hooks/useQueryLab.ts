@@ -47,7 +47,7 @@ export function useQueryLab() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        throw new Error(body?.message ?? `Server error: ${res.status}`)
+        throw new Error(body?.message ?? `Error del servidor: ${res.status}`)
       }
 
       const data: QueryResponse = await res.json()
@@ -60,15 +60,15 @@ export function useQueryLab() {
       setState((prev) => ({
         ...prev,
         status: "error",
-        error: err instanceof Error ? err.message : "Unknown error",
+        error: err instanceof Error ? err.message : "Error desconocido",
       }))
     }
   }, [state.query, state.dialect])
 
   const resetDatabase = useCallback(async () => {
     const confirmed = window.confirm(
-      "This will reset the database to its original state.\n" +
-      "All seed data will be restored. Continue?"
+      "Esto restaurará la base de datos a su estado original.\n" +
+      "Todos los datos iniciales serán recuperados. ¿Continuar?"
     )
     if (!confirmed) return
 
@@ -80,7 +80,7 @@ export function useQueryLab() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => null)
-        throw new Error(body?.message ?? `Reset failed: ${res.status}`)
+        throw new Error(body?.message ?? `Error al restaurar: ${res.status}`)
       }
 
       const body = await res.json()
@@ -95,7 +95,7 @@ export function useQueryLab() {
       setState((prev) => ({
         ...prev,
         status: "error",
-        error: err instanceof Error ? err.message : "Reset failed",
+        error: err instanceof Error ? err.message : "Error al restaurar la base de datos",
       }))
     }
   }, [])
