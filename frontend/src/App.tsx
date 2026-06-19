@@ -1,45 +1,11 @@
-import { useState, useCallback } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { QueryEditor } from "@/components/layout/QueryEditor"
 import { ResultCanvas } from "@/components/layout/ResultCanvas"
-import type { QueryResponse } from "@/types"
+import { useQueryLab } from "@/hooks/useQueryLab"
 import { Terminal } from "lucide-react"
 
-type Status = "idle" | "loading" | "error" | "success"
-
 function App() {
-  const [query, setQuery] = useState("")
-  const [status, setStatus] = useState<Status>("idle")
-  const [result, setResult] = useState<QueryResponse | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleExecute = useCallback(async () => {
-    if (!query.trim()) return
-
-    setStatus("loading")
-    setError(null)
-    setResult(null)
-
-    try {
-      const res = await fetch("/api/v1/queries/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, dialect: "SQL" }),
-      })
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => null)
-        throw new Error(body?.message ?? `Server error: ${res.status}`)
-      }
-
-      const data: QueryResponse = await res.json()
-      setResult(data)
-      setStatus("success")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error")
-      setStatus("error")
-    }
-  }, [query])
+  const { query, status, result, error, setQuery, execute } = useQueryLab()
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -59,7 +25,7 @@ function App() {
             <QueryEditor
               value={query}
               onChange={setQuery}
-              onExecute={handleExecute}
+              onExecute={execute}
               loading={status === "loading"}
             />
           </div>
@@ -69,7 +35,7 @@ function App() {
               status={status}
               result={result}
               error={error}
-              onExecute={handleExecute}
+              onExecute={execute}
             />
           </div>
         </main>

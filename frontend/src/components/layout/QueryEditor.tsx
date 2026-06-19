@@ -1,4 +1,4 @@
-import { useRef } from "react"
+import { useRef, useCallback } from "react"
 import Editor, { type OnMount } from "@monaco-editor/react"
 import { Button } from "@/components/ui/button"
 import { Play, RotateCcw } from "lucide-react"
@@ -15,20 +15,31 @@ export function QueryEditor({ value, onChange, onExecute, loading }: QueryEditor
 
   const handleMount: OnMount = (editor) => {
     editorRef.current = editor
+    editor.addAction({
+      id: "execute-query",
+      label: "Execute Query",
+      keybindings: [2048 | 3],
+      run: () => {
+        onExecute()
+      },
+    })
     editor.focus()
   }
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     onChange("")
     editorRef.current?.setValue("")
     editorRef.current?.focus()
-  }
+  }, [onChange])
 
   return (
     <div className="flex flex-col h-full bg-editor" role="region" aria-label="SQL query editor">
       <div className="flex items-center justify-between px-4 h-10 border-b border-border bg-muted/30 shrink-0">
         <span className="text-xs font-medium text-muted-foreground">SQL Query</span>
         <div className="flex items-center gap-1">
+          <span className="text-[10px] text-muted-foreground mr-1 hidden sm:inline">
+            Ctrl+Enter
+          </span>
           <Button
             variant="ghost"
             size="xs"
