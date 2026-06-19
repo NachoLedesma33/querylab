@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
@@ -20,7 +20,11 @@ import {
   FileJson,
   FileText,
   FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react"
+
+const PAGE_SIZE = 100
 
 interface ResultCanvasProps {
   status: "idle" | "loading" | "error" | "success"
@@ -44,12 +48,27 @@ function download(filename: string, content: string) {
   URL.revokeObjectURL(url)
 }
 
-function exportCsv(result: QueryResponse) {
-  const columns = result.columns.length > 0
+function getColumns(result: QueryResponse) {
+  return result.columns.length > 0
     ? result.columns
-    : result.result.length > 0 ? Object.keys(result.result[0]) : []
+    : result.result.length > 0
+      ? Object.keys(result.result[0])
+      : []
+}
+
+function getRowValue(row: Record<string, unknown>, column: string) {
+  if (Object.prototype.hasOwnProperty.call(row, column)) {
+    return row[column]
+  }
+
+  const actualKey = Object.keys(row).find((key) => key.toLowerCase() === column.toLowerCase())
+  return actualKey ? row[actualKey] : ""
+}
+
+function exportCsv(result: QueryResponse) {
+  const columns = getColumns(result)
   const header = columns.join(",")
-  const rows = result.result.map((r) => columns.map((c) => `"${String(r[c] ?? "").replace(/"/g, '""')}"`).join(","))
+  const rows = result.result.map((r) => columns.map((c) => `"${String(getRowValue(r, c) ?? "").replace(/"/g, '""')}"`).join(","))
   download("resultados.csv", [header, ...rows].join("\n"))
 }
 
@@ -59,12 +78,10 @@ function exportJson(result: QueryResponse) {
 }
 
 function exportMarkdown(result: QueryResponse) {
-  const columns = result.columns.length > 0
-    ? result.columns
-    : result.result.length > 0 ? Object.keys(result.result[0]) : []
+  const columns = getColumns(result)
   const header = `| ${columns.join(" | ")} |`
   const separator = `| ${columns.map(() => "---").join(" | ")} |`
-  const rows = result.result.map((r) => `| ${columns.map((c) => String(r[c] ?? "")).join(" | ")} |`)
+  const rows = result.result.map((r) => `| ${columns.map((c) => String(getRowValue(r, c) ?? "")).join(" | ")} |`)
   download("resultados.md", [header, separator, ...rows].join("\n"))
 }
 
@@ -149,20 +166,122 @@ function ErrorState({ message }: { message: string }) {
   )
 }
 
+function PaginatedTable({ result: allRows, columns, totalRows }: {
+  result: Record<string, unknown>[]
+  columns: string[]
+  totalRows: number
+}) {
+  const [page, setPage] = useState(0)
+  const totalPages = Math.ceil(totalRows / PAGE_SIZE)
+  const hasPagination = totalRows > PAGE_SIZE
+
+  const pageRows = useMemo(
+    () => allRows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE),
+    [allRows, page]
+  )
+
+  return (
+    <div className="flex flex-col flex-1">
+      <ScrollArea className="flex-1">
+        <div className="p-4">
+          {pageRows.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Consulta ejecutada correctamente. No se devolvieron filas.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table
+                className="w-full text-sm border-collapse"
+                role="table"
+                aria-label="Resultados de la consulta"
+              >
+                <thead>
+                  <tr className="border-b border-border">
+                    {columns.map((col) => (
+                      <th
+                        key={col}
+                        className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                        scope="col"
+                      >
+                        {col}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageRows.map((row, i) => (
+                    <tr
+                      key={i}
+                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                    >
+                      {columns.map((col) => (
+                        <td
+                          key={col}
+                          className="px-3 py-2 text-sm font-mono text-foreground/90"
+                        >
+                          {String(getRowValue(row, col) ?? "")}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+      {hasPagination && (
+        <div className="flex items-center justify-between px-4 h-10 border-t border-border shrink-0 bg-muted/20">
+          <span className="text-xs text-muted-foreground">
+            Página {page + 1} de {totalPages} ({totalRows} filas)
+          </span>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="xs"
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+              aria-label="Página anterior"
+            >
+              <ChevronLeft className="size-3.5" />
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => (
+              <Button
+                key={i}
+                variant={i === page ? "secondary" : "ghost"}
+                size="xs"
+                className="text-[11px] min-w-[24px]"
+                onClick={() => setPage(i)}
+              >
+                {i + 1}
+              </Button>
+            ))}
+            <Button
+              variant="ghost"
+              size="xs"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              aria-label="Página siguiente"
+            >
+              <ChevronRight className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
   result: QueryResponse
   results: QueryResponse[]
   currentResultIndex: number
   onSelectResult: (index: number) => void
 }) {
-  const columns = result.columns.length > 0
-    ? result.columns
-    : result.result.length > 0
-      ? Object.keys(result.result[0])
-      : []
+  const columns = getColumns(result)
 
   return (
-    <div className="flex flex-col h-full" role="region" aria-label="Resultados de la consulta">
+    <div className="flex flex-col flex-1" role="region" aria-label="Resultados de la consulta">
       <div className="flex items-center gap-3 px-4 h-10 border-b border-border shrink-0">
         {results.length > 1 && (
           <div className="flex items-center gap-0.5 mr-2 border-r border-border pr-2">
@@ -215,54 +334,11 @@ function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
           </Button>
         </div>
       </div>
-      <ScrollArea className="flex-1">
-        <div className="p-4">
-          {result.result.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Consulta ejecutada correctamente. No se devolvieron filas.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table
-                className="w-full text-sm border-collapse"
-                role="table"
-                aria-label="Resultados de la consulta"
-              >
-                <thead>
-                  <tr className="border-b border-border">
-                    {columns.map((col) => (
-                      <th
-                        key={col}
-                        className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider"
-                        scope="col"
-                      >
-                        {col}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.result.map((row, i) => (
-                    <tr
-                      key={i}
-                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
-                    >
-                      {columns.map((col) => (
-                        <td
-                          key={col}
-                          className="px-3 py-2 text-sm font-mono text-foreground/90"
-                        >
-                          {String(row[col] ?? "")}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+      <PaginatedTable
+        result={result.result}
+        columns={columns}
+        totalRows={result.rows}
+      />
     </div>
   )
 }
@@ -316,7 +392,7 @@ export function ResultCanvas({
 
   return (
     <Card
-      className="flex-1 min-h-0 rounded-none border-0 border-t border-border bg-canvas overflow-hidden"
+      className="flex flex-col flex-1 min-h-0 h-full rounded-none border-0 border-t border-border bg-canvas overflow-hidden"
       role="region"
       aria-label="Panel de resultados"
     >
@@ -342,7 +418,7 @@ export function ResultCanvas({
       </div>
 
       {view === "graph" ? (
-        <div className="flex flex-col flex-1 min-h-0">
+        <div className="flex flex-col flex-1 min-h-0 h-full">
           {status === "success" && result && (
             <StepPipeline
               pipeline={pipeline}
@@ -352,7 +428,7 @@ export function ResultCanvas({
               tables={tables}
             />
           )}
-          <div className="flex-1 min-h-0">
+          <div className="relative flex-1 min-h-0 h-full w-full min-h-[360px]">
             <QueryVisualizer
               pipeline={pipeline}
               tables={tables}

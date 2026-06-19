@@ -1,6 +1,6 @@
-import { useState } from "react"
-import type { TableSchema } from "@/types"
+import { useState, type DragEvent } from "react"
 import type { HistoryEntry } from "@/hooks/useQueryHistory"
+import { defaultSchema } from "@/schema"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -15,60 +15,25 @@ import {
   Play,
 } from "lucide-react"
 
-const defaultSchema: TableSchema[] = [
-  {
-    name: "movies",
-    columns: [
-      { name: "id", type: "BIGINT" },
-      { name: "title", type: "VARCHAR(255)" },
-      { name: "genre", type: "VARCHAR(100)" },
-      { name: "release_year", type: "INT" },
-      { name: "rating", type: "DECIMAL(3,1)" },
-      { name: "duration_minutes", type: "INT" },
-      { name: "director", type: "VARCHAR(255)" },
-    ],
-  },
-  {
-    name: "users",
-    columns: [
-      { name: "id", type: "BIGINT" },
-      { name: "name", type: "VARCHAR(255)" },
-      { name: "email", type: "VARCHAR(255)" },
-      { name: "age", type: "INT" },
-      { name: "signup_date", type: "DATE" },
-      { name: "country", type: "VARCHAR(100)" },
-    ],
-  },
-  {
-    name: "subscriptions",
-    columns: [
-      { name: "id", type: "BIGINT" },
-      { name: "user_id", type: "BIGINT" },
-      { name: "plan", type: "VARCHAR(50)" },
-      { name: "price", type: "DECIMAL(6,2)" },
-      { name: "start_date", type: "DATE" },
-      { name: "end_date", type: "DATE" },
-      { name: "active", type: "BOOLEAN" },
-    ],
-  },
-  {
-    name: "watch_history",
-    columns: [
-      { name: "id", type: "BIGINT" },
-      { name: "user_id", type: "BIGINT" },
-      { name: "movie_id", type: "BIGINT" },
-      { name: "watched_at", type: "TIMESTAMP" },
-      { name: "progress_seconds", type: "INT" },
-      { name: "completed", type: "BOOLEAN" },
-    ],
-  },
-]
-
-function SchemaTable({ table, onSelectTable }: { table: TableSchema; onSelectTable: (name: string) => void }) {
+function SchemaTable({ table, onSelectTable, onDragTable }: {
+  table: (typeof defaultSchema)[number]
+  onSelectTable: (name: string) => void
+  onDragTable: (name: string) => void
+}) {
   const [open, setOpen] = useState(false)
 
+  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData("text/plain", table.name)
+    e.dataTransfer.effectAllowed = "copy"
+    onDragTable(table.name)
+  }
+
   return (
-    <div>
+    <div
+      draggable
+      onDragStart={handleDragStart}
+      className="rounded cursor-grab active:cursor-grabbing"
+    >
       <Button
         variant="ghost"
         size="sm"
@@ -87,13 +52,17 @@ function SchemaTable({ table, onSelectTable }: { table: TableSchema; onSelectTab
         <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0">
           {table.columns.length}
         </Badge>
-        <button
+        <span
+          role="button"
+          tabIndex={0}
           onClick={(e) => { e.stopPropagation(); onSelectTable(table.name) }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-indigo-400 hover:text-indigo-300"
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onSelectTable(table.name) } }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-indigo-400 hover:text-indigo-300 cursor-pointer"
           title={`SELECT * FROM ${table.name} LIMIT 5`}
+          aria-label={`Ejecutar SELECT * FROM ${table.name} LIMIT 5`}
         >
           <Play className="size-3" />
-        </button>
+        </span>
       </Button>
       {open && (
         <div className="ml-6 border-l border-border pl-3 py-1 space-y-0.5">
@@ -120,9 +89,10 @@ interface SidebarProps {
   history: HistoryEntry[]
   onSelectHistory: (query: string) => void
   onClearHistory: () => void
+  onDragTable?: (tableName: string) => void
 }
 
-export function Sidebar({ onSelectTable, history, onSelectHistory, onClearHistory }: SidebarProps) {
+export function Sidebar({ onSelectTable, history, onSelectHistory, onClearHistory, onDragTable }: SidebarProps) {
   const [tab, setTab] = useState<"schema" | "history">("schema")
 
   return (
@@ -158,7 +128,12 @@ export function Sidebar({ onSelectTable, history, onSelectHistory, onClearHistor
         <ScrollArea className="flex-1 p-2">
           <nav role="tree" aria-label="Tablas">
             {defaultSchema.map((table) => (
-              <SchemaTable key={table.name} table={table} onSelectTable={onSelectTable} />
+              <SchemaTable
+                key={table.name}
+                table={table}
+                onSelectTable={onSelectTable}
+                onDragTable={onDragTable ?? (() => {})}
+              />
             ))}
           </nav>
         </ScrollArea>

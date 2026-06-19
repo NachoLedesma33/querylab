@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -75,11 +76,7 @@ public class SqlQueryExecutor implements QueryExecutor {
         long elapsed = System.currentTimeMillis() - start;
 
         List<String> tables = extractTables(trimmed);
-        List<String> columns = extractColumns(trimmed);
-
-        if (columns.size() == 1 && columns.get(0).equals("*") && !rows.isEmpty()) {
-            columns = new ArrayList<>(rows.get(0).keySet());
-        }
+        List<String> columns = resolveColumns(trimmed, rows);
 
         return new QueryResponse(rows, tables, columns, rows.size(), elapsed, "SQL");
     }
@@ -127,8 +124,8 @@ public class SqlQueryExecutor implements QueryExecutor {
         return tables;
     }
 
-    List<String> extractColumns(String sql) {
-        List<String> columns = new ArrayList<>();
+    List<String> resolveColumns(String sql, List<Map<String, Object>> rows) {
+        List<String> extracted = new ArrayList<>();
         Pattern selectPattern = Pattern.compile(
             "SELECT\\s+(.+?)\\s+FROM",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL
@@ -137,19 +134,46 @@ public class SqlQueryExecutor implements QueryExecutor {
         if (matcher.find()) {
             String selectClause = matcher.group(1).trim();
             if (selectClause.equals("*")) {
-                columns.add("*");
-            } else {
-                for (String col : selectClause.split(",")) {
-                    String cleaned = col.trim().replaceAll("\\s+AS\\s+.*", "")
-                        .replaceAll("(?i)\\s+as\\s+.*", "")
-                        .replaceAll("[\"`]", "")
-                        .trim();
-                    if (!cleaned.isEmpty()) {
-                        columns.add(cleaned);
-                    }
+                if (!rows.isEmpty()) {
+                    return new ArrayList<>(rows.get(0).keySet());
+                }
+                return List.of("*");
+            }
+            for (String col : selectClause.split(",")) {
+                String cleaned = col.trim()
+                    .replaceAll("(?i)\\s+AS\\s+.*", "")
+                    .replaceAll("[\"`]", "")
+                    .trim();
+                if (cleaned.contains(".")) {
+                    cleaned = cleaned.substring(cleaned.lastIndexOf('.') + 1).trim();
+                }
+                if (!cleaned.isEmpty()) {
+                    extracted.add(cleaned);
                 }
             }
         }
-        return columns;
+
+        if (!rows.isEmpty() && !extracted.isEmpty()) {
+            Set<String> actualKeys = rows.get(0).keySet();
+            boolean allMatch = extracted.stream().allMatch(actualKeys::contains);
+            if (!allMatch) {
+                boolean caseInsensitiveMatch = extracted.stream()
+                    .allMatch(e -> actualKeys.stream().anyMatch(k -> k.equalsIgnoreCase(e)));
+                if (caseInsensitiveMatch) {
+                    List<String> matched = new ArrayList<>();
+                    for (String ext : extracted) {
+                        String found = actualKeys.stream()
+                            .filter(k -> k.equalsIgnoreCase(ext))
+                            .findFirst()
+                            .orElse(ext);
+                        matched.add(found);
+                    }
+                    return matched;
+                }
+                return new ArrayList<>(actualKeys);
+            }
+        }
+
+        return extracted;
     }
 }

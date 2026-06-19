@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import type { QueryResponse } from "@/types"
 import { useQueryHistory } from "./useQueryHistory"
 
@@ -30,6 +30,9 @@ export function useQueryLab() {
     currentResultIndex: 0,
   })
 
+  const stateRef = useRef(state)
+  stateRef.current = state
+
   const setQuery = useCallback((query: string) => {
     setState((prev) => ({ ...prev, query }))
   }, [])
@@ -50,15 +53,44 @@ export function useQueryLab() {
     }))
   }, [])
 
-  const setAndExecute = useCallback(async (query: string) => {
-    setState((prev) => ({ ...prev, query }))
+  const postQuery = useCallback(async (
+    query: string,
+    dialect: string,
+    sqlDialect: string
+  ): Promise<QueryResponse> => {
     const baseUrl = import.meta.env.VITE_API_URL ?? ""
-    const dialect = state.dialect
-    const sqlDialect = state.sqlDialect
+    const res = await fetch(`${baseUrl}/api/v1/query/execute`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, dialect, sqlDialect }),
+    })
+
+    if (!res.ok) {
+      let message: string
+      try {
+        const body = await res.json()
+        message = body?.message ?? `Error del servidor: ${res.status}`
+      } catch {
+        const text = await res.text().catch(() => null)
+        message = text
+          ? `Error ${res.status}: ${text.slice(0, 300)}`
+          : `Error del servidor: ${res.status}`
+      }
+      throw new Error(message)
+    }
+
+    return res.json()
+  }, [])
+
+  const setAndExecute = useCallback(async (query: string) => {
+    const s = stateRef.current
+    const dialect = "SQL"
+    const sqlDialect = s.sqlDialect
 
     setState((prev) => ({
       ...prev,
       query,
+      dialect,
       status: "loading",
       error: null,
       result: null,
@@ -67,27 +99,7 @@ export function useQueryLab() {
     }))
 
     try {
-      const res = await fetch(`${baseUrl}/api/v1/query/execute`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, dialect, sqlDialect }),
-      })
-
-      if (!res.ok) {
-        let message: string
-        try {
-          const body = await res.json()
-          message = body?.message ?? `Error del servidor: ${res.status}`
-        } catch {
-          const text = await res.text().catch(() => null)
-          message = text
-            ? `Error ${res.status}: ${text.slice(0, 300)}`
-            : `Error del servidor: ${res.status}`
-        }
-        throw new Error(message)
-      }
-
-      const data: QueryResponse = await res.json()
+      const data: QueryResponse = await postQuery(query, dialect, sqlDialect)
       addEntry(query, dialect, sqlDialect)
       setState((prev) => ({
         ...prev,
@@ -104,16 +116,17 @@ export function useQueryLab() {
         results: [],
       }))
     }
-  }, [state.dialect, state.sqlDialect, addEntry])
+  }, [postQuery, addEntry])
 
   const execute = useCallback(async () => {
-    const rawQuery = state.query.trim()
+    const s = stateRef.current
+    const rawQuery = s.query.trim()
     if (!rawQuery) return
 
     const statements = rawQuery
       .split(";")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0)
+      .map((stmt) => stmt.trim())
+      .filter((stmt) => stmt.length > 0)
 
     if (statements.length === 0) return
 
@@ -126,39 +139,17 @@ export function useQueryLab() {
       currentResultIndex: 0,
     }))
 
-    const baseUrl = import.meta.env.VITE_API_URL ?? ""
     const results: QueryResponse[] = []
     let firstError: string | null = null
 
     for (const stmt of statements) {
       try {
-        const res = await fetch(`${baseUrl}/api/v1/query/execute`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: stmt,
-            dialect: state.dialect,
-            sqlDialect: state.sqlDialect,
-          }),
-        })
-
-        if (!res.ok) {
-          let msg: string
-          try {
-            const body = await res.json()
-            msg = body?.message ?? `Error del servidor: ${res.status}`
-          } catch {
-            const text = await res.text().catch(() => null)
-            msg = text ? `Error ${res.status}: ${text.slice(0, 300)}` : `Error del servidor: ${res.status}`
-          }
-          if (!firstError) firstError = `Error en sentencia ${results.length + 1}: ${msg}`
-          break
-        }
-
-        const data: QueryResponse = await res.json()
+        const data = await postQuery(stmt, s.dialect, s.sqlDialect)
         results.push(data)
       } catch (err) {
-        if (!firstError) firstError = `Error en sentencia ${results.length + 1}: ${err instanceof Error ? err.message : "Error desconocido"}`
+        if (!firstError) {
+          firstError = `Error en sentencia ${results.length + 1}: ${err instanceof Error ? err.message : "Error desconocido"}`
+        }
         break
       }
     }
@@ -174,7 +165,7 @@ export function useQueryLab() {
     }
 
     if (results.length > 0) {
-      addEntry(rawQuery, state.dialect, state.sqlDialect)
+      addEntry(rawQuery, s.dialect, s.sqlDialect)
     }
 
     setState((prev) => ({
@@ -185,7 +176,7 @@ export function useQueryLab() {
       currentResultIndex: 0,
       error: firstError,
     }))
-  }, [state.query, state.dialect, state.sqlDialect, addEntry])
+  }, [postQuery, addEntry])
 
   const resetDatabase = useCallback(async () => {
     const confirmed = window.confirm(

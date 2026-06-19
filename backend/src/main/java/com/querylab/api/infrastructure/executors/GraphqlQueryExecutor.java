@@ -57,7 +57,7 @@ public class GraphqlQueryExecutor implements QueryExecutor {
         return new QueryResponse(rows, tables, columns, rows.size(), elapsed, "GraphQL");
     }
 
-    static ParsedGraphQL parse(String query) {
+    public static ParsedGraphQL parse(String query) {
         String trimmed = query.trim();
 
         Pattern queryPattern = Pattern.compile(
@@ -105,7 +105,7 @@ public class GraphqlQueryExecutor implements QueryExecutor {
         return new ParsedGraphQL(tableName, fields, args);
     }
 
-    static String buildSql(ParsedGraphQL parsed) {
+    public static String buildSql(ParsedGraphQL parsed) {
         String cols = String.join(", ", parsed.fields);
         String sql = "SELECT " + cols + " FROM " + parsed.tableName;
 
@@ -120,5 +120,5 @@ public class GraphqlQueryExecutor implements QueryExecutor {
         return sql;
     }
 
-    static record ParsedGraphQL(String tableName, List<String> fields, Map<String, String> args) {}
+    public static record ParsedGraphQL(String tableName, List<String> fields, Map<String, String> args) {}
 }

@@ -1,97 +1,183 @@
+import { lazy, Suspense, useState, useCallback } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
-import { QueryEditor } from "@/components/layout/QueryEditor"
 import { ResultCanvas } from "@/components/layout/ResultCanvas"
+import { ShortcutsDialog } from "@/components/layout/ShortcutsDialog"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
+import { useSound } from "@/hooks/useSound"
 import { Button } from "@/components/ui/button"
-import { Terminal, RotateCcw, Sun, Moon } from "lucide-react"
+import { Terminal, RotateCcw, Sun, Moon, Keyboard, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react"
+
+const QueryEditor = lazy(() => import("@/components/layout/QueryEditor"))
 
 const SQL_DIALECTS = ["H2", "MySQL", "PostgreSQL", "SQLServer", "Oracle"] as const
 
+function EditorSkeleton() {
+  return (
+    <div className="flex flex-col h-full bg-editor" role="status" aria-label="Cargando editor">
+      <div className="h-10 border-b border-border bg-muted/30 shrink-0" />
+      <div className="flex-1 p-4 space-y-2">
+        <div className="h-4 w-3/4 rounded bg-muted/50 animate-pulse" />
+        <div className="h-4 w-1/2 rounded bg-muted/50 animate-pulse" />
+        <div className="h-4 w-2/3 rounded bg-muted/50 animate-pulse" />
+      </div>
+    </div>
+  )
+}
+
 function App() {
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [presentation, setPresentation] = useState(false)
+  const [draggedTable, setDraggedTable] = useState<string | null>(null)
+
   const {
     query, dialect, sqlDialect, status, result, error, results, currentResultIndex,
     history, clearHistory,
     setQuery, setDialect, setSqlDialect, setAndExecute, execute, selectResult, resetDatabase,
   } = useQueryLab()
   const { theme, toggleTheme } = useTheme()
+  const { soundEnabled, toggleSound, playSuccess } = useSound()
+
+  const handleExecute = useCallback(() => {
+    execute().then(() => {
+      const s = status
+      if (s === "success" || s === "error") {
+        if (s === "success") playSuccess()
+      }
+    })
+  }, [execute, status, playSuccess])
 
   return (
     <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
-      <header className="h-12 border-b border-border flex items-center px-4 gap-2 bg-header shrink-0" role="banner">
-        <Terminal className="size-5 text-indigo-400" />
-        <span className="text-sm font-bold tracking-tight">QueryLab</span>
-        <div className="ml-4 flex items-center gap-1">
-          {(["SQL", "GraphQL"] as const).map((d) => (
-            <Button
-              key={d}
-              variant={dialect === d ? "secondary" : "ghost"}
-              size="xs"
-              onClick={() => setDialect(d)}
-              aria-pressed={dialect === d}
-            >
-              {d}
-            </Button>
-          ))}
-        </div>
-        {dialect === "SQL" && (
-          <div className="flex items-center gap-1 ml-1 border-l border-border pl-2">
-            {SQL_DIALECTS.map((d) => (
+      {!presentation && (
+        <header className="h-12 border-b border-border flex items-center px-4 gap-2 bg-header shrink-0" role="banner">
+          <Terminal className="size-5 text-indigo-400" />
+          <span className="text-sm font-bold tracking-tight">QueryLab</span>
+          <div className="ml-4 flex items-center gap-1">
+            {(["SQL", "GraphQL"] as const).map((d) => (
               <Button
                 key={d}
-                variant={sqlDialect === d ? "secondary" : "ghost"}
+                variant={dialect === d ? "secondary" : "ghost"}
                 size="xs"
-                onClick={() => setSqlDialect(d)}
-                aria-pressed={sqlDialect === d}
-                className="text-[11px] px-1.5"
+                onClick={() => setDialect(d)}
+                aria-pressed={dialect === d}
               >
                 {d}
               </Button>
             ))}
           </div>
-        )}
-        <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-auto">
-          {dialect === "SQL" ? `Entorno ${sqlDialect}` : "Entorno GraphQL"}
-        </span>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={toggleTheme}
-          aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
-          title={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
-          className="text-muted-foreground hover:text-amber-400"
-        >
-          {theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
-        </Button>
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={resetDatabase}
-          aria-label="Restaurar base de datos"
-          title="Restaurar la base de datos a su estado original"
-          className="text-muted-foreground hover:text-orange-400"
-        >
-          <RotateCcw className="size-3.5" />
-          Restaurar BD
-        </Button>
-      </header>
+          {dialect === "SQL" && (
+            <div className="flex items-center gap-1 ml-1 border-l border-border pl-2">
+              {SQL_DIALECTS.map((d) => (
+                <Button
+                  key={d}
+                  variant={sqlDialect === d ? "secondary" : "ghost"}
+                  size="xs"
+                  onClick={() => setSqlDialect(d)}
+                  aria-pressed={sqlDialect === d}
+                  className="text-[11px] px-1.5"
+                >
+                  {d}
+                </Button>
+              ))}
+            </div>
+          )}
+          <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-auto">
+            {dialect === "SQL" ? `Entorno ${sqlDialect}` : "Entorno GraphQL"}
+          </span>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={toggleSound}
+            aria-label={soundEnabled() ? "Desactivar sonido" : "Activar sonido"}
+            title={soundEnabled() ? "Desactivar sonido" : "Activar sonido"}
+            className="text-muted-foreground hover:text-indigo-400"
+          >
+            {soundEnabled() ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
+            title={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
+            className="text-muted-foreground hover:text-amber-400"
+          >
+            {theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setShortcutsOpen(true)}
+            aria-label="Atajos de teclado"
+            title="Atajos de teclado"
+            className="text-muted-foreground hover:text-indigo-400"
+          >
+            <Keyboard className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setPresentation(true)}
+            aria-label="Modo presentación"
+            title="Modo presentación"
+            className="text-muted-foreground hover:text-green-400"
+          >
+            <Maximize2 className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={resetDatabase}
+            aria-label="Restaurar base de datos"
+            title="Restaurar la base de datos a su estado original"
+            className="text-muted-foreground hover:text-orange-400"
+          >
+            <RotateCcw className="size-3.5" />
+            Restaurar BD
+          </Button>
+        </header>
+      )}
+
+      {presentation && (
+        <div className="absolute top-2 right-2 z-50">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setPresentation(false)}
+            aria-label="Salir de modo presentación"
+            title="Salir de modo presentación"
+            className="bg-card/80 backdrop-blur border border-border text-muted-foreground hover:text-green-400"
+          >
+            <Minimize2 className="size-3.5" />
+          </Button>
+        </div>
+      )}
 
       <div className="flex flex-1 min-h-0">
-        <Sidebar
-          onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName} LIMIT 5`)}
-          history={history}
-          onSelectHistory={(query) => setAndExecute(query)}
-          onClearHistory={clearHistory}
-        />
+        {!presentation && (
+          <Sidebar
+            onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName} LIMIT 5`)}
+            history={history}
+            onSelectHistory={(query) => setAndExecute(query)}
+            onClearHistory={clearHistory}
+            onDragTable={(tableName) => setDraggedTable(tableName)}
+          />
+        )}
 
         <main className="flex-1 flex flex-col min-w-0">
           <div className="h-1/2 min-h-[120px]">
-            <QueryEditor
-              value={query}
-              onChange={setQuery}
-              onExecute={execute}
-              loading={status === "loading"}
-            />
+            <Suspense fallback={<EditorSkeleton />}>
+              <QueryEditor
+                value={query}
+                onChange={setQuery}
+                onExecute={handleExecute}
+                loading={status === "loading"}
+                theme={theme}
+                draggedTable={draggedTable}
+                onClearDrag={() => setDraggedTable(null)}
+              />
+            </Suspense>
           </div>
 
           <div className="flex-1 min-h-[120px]">
@@ -107,6 +193,8 @@ function App() {
           </div>
         </main>
       </div>
+
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   )
 }

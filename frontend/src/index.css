@@ -23,7 +23,9 @@
   --radius-md: 0.5rem;
 }
 
-:root {
+/* Dark theme (default) */
+:root,
+.dark {
   --background: #0a0a0f;
   --foreground: #e4e4ed;
   --card: #12121a;
@@ -43,4 +45,27 @@
   --ring: #818cf8;
   --secondary: #1a1a26;
   --secondary-foreground: #e4e4ed;
+}
+
+/* Light theme */
+.light {
+  --background: #f5f5fa;
+  --foreground: #1a1a2e;
+  --card: #ffffff;
+  --card-foreground: #1a1a2e;
+  --muted: #eeeef4;
+  --muted-foreground: #6b6b80;
+  --primary: #818cf8;
+  --primary-foreground: #ffffff;
+  --border: #d4d4e0;
+  --destructive: #ef4444;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a2e;
+  --editor: #fafafa;
+  --canvas: #f5f5fa;
+  --header: #ffffff;
+  --input: #d4d4e0;
+  --ring: #818cf8;
+  --secondary: #eeeef4;
+  --secondary-foreground: #1a1a2e;
 }

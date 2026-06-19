@@ -156,8 +156,10 @@ export function QueryVisualizer({
   }, [])
 
   return (
-    <div className="w-full h-full" role="region" aria-label="Visualización del esquema de base de datos">
+    <div className="relative h-full w-full min-h-[360px]" role="region" aria-label="Visualización del esquema de base de datos">
       <ReactFlow
+        className="h-full w-full"
+        style={{ width: "100%", height: "100%" }}
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
