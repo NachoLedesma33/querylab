@@ -181,9 +181,9 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
   )
 
   return (
-    <div className="flex flex-col flex-1">
-      <ScrollArea className="flex-1">
-        <div className="p-2">
+    <div className="flex flex-col flex-1 min-h-0">
+      <ScrollArea className="flex-1 min-h-0">
+        <div className="p-2 min-h-full">
           {pageRows.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               Consulta ejecutada correctamente. No se devolvieron filas.
@@ -281,7 +281,7 @@ function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
   const columns = getColumns(result)
 
   return (
-    <div className="flex flex-col flex-1" role="region" aria-label="Resultados de la consulta">
+    <div className="flex flex-col flex-1 min-h-0" role="region" aria-label="Resultados de la consulta">
       <div className="flex items-center gap-3 px-4 h-10 border-b border-border shrink-0">
         {results.length > 1 && (
           <div className="flex items-center gap-0.5 mr-2 border-r border-border pr-2">
