@@ -9,6 +9,8 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-sidebar: var(--sidebar);
@@ -20,31 +22,33 @@
   --color-ring: var(--ring);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  --radius-md: 0.5rem;
+  --radius-md: 0px;
 }
 
 /* Dark theme (default) */
 :root,
 .dark {
-  --background: #0a0a0f;
-  --foreground: #e4e4ed;
-  --card: #12121a;
-  --card-foreground: #e4e4ed;
-  --muted: #1a1a26;
-  --muted-foreground: #8888a0;
-  --primary: #818cf8;
-  --primary-foreground: #0a0a0f;
-  --border: #1e1e2e;
+  --background: #000000;
+  --foreground: #e0e0e0;
+  --card: #0a0a0a;
+  --card-foreground: #e0e0e0;
+  --muted: #111111;
+  --muted-foreground: #666666;
+  --primary: #e0e0e0;
+  --primary-foreground: #000000;
+  --accent: #d4a017;
+  --accent-foreground: #000000;
+  --border: #2a2a2a;
   --destructive: #f87171;
-  --sidebar: #0d0d15;
-  --sidebar-foreground: #c4c4d0;
-  --editor: #0d1117;
-  --canvas: #0d0d15;
-  --header: #0d0d15;
-  --input: #1e1e2e;
-  --ring: #818cf8;
-  --secondary: #1a1a26;
-  --secondary-foreground: #e4e4ed;
+  --sidebar: #050505;
+  --sidebar-foreground: #c0c0c0;
+  --editor: #050505;
+  --canvas: #050505;
+  --header: #050505;
+  --input: #1a1a1a;
+  --ring: #d4a017;
+  --secondary: #111111;
+  --secondary-foreground: #e0e0e0;
 }
 
 /* Light theme */
@@ -55,8 +59,10 @@
   --card-foreground: #1a1a2e;
   --muted: #eeeef4;
   --muted-foreground: #6b6b80;
-  --primary: #818cf8;
+  --primary: #1a1a2e;
   --primary-foreground: #ffffff;
+  --accent: #b8860b;
+  --accent-foreground: #ffffff;
   --border: #d4d4e0;
   --destructive: #ef4444;
   --sidebar: #ffffff;
@@ -65,7 +71,74 @@
   --canvas: #f5f5fa;
   --header: #ffffff;
   --input: #d4d4e0;
-  --ring: #818cf8;
+  --ring: #b8860b;
   --secondary: #eeeef4;
   --secondary-foreground: #1a1a2e;
+}
+
+/* Neoclassic overrides: sharp edges, yellow accents */
+.neoclassic {
+  --radius-md: 0px;
+}
+
+.neoclassic * {
+  border-radius: 0 !important;
+}
+
+/* Hyper-dense table styling */
+.neoclassic table {
+  border-collapse: collapse;
+}
+
+.neoclassic table td,
+.neoclassic table th {
+  padding: 2px 8px;
+  line-height: 1.2;
+}
+
+/* Sharp badge override */
+.badge-sharp {
+  border-radius: 0 !important;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: transparent;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  padding: 0 4px;
+  height: 16px;
+  line-height: 16px;
+}
+
+/* Sharp button override */
+.btn-sharp {
+  border-radius: 0 !important;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  transition: all 0.15s;
+}
+
+.btn-sharp:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Active tab with yellow underline */
+.tab-active {
+  color: var(--accent) !important;
+  border-bottom: 1px solid var(--accent);
+}
+
+/* Sharp input override */
+.input-sharp {
+  border-radius: 0 !important;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.input-sharp:focus {
+  outline: none;
+  border-color: var(--accent);
 }

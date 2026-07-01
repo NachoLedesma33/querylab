@@ -48,16 +48,16 @@ function App() {
   }, [execute, status, playSuccess])
 
   return (
-    <div className="h-screen flex flex-col bg-background text-foreground overflow-hidden">
+    <div className="neoclassic h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {!presentation && (
         <header className="h-12 border-b border-border flex items-center px-4 gap-2 bg-header shrink-0" role="banner">
-          <Terminal className="size-5 text-indigo-400" />
+          <Terminal className="size-5 text-accent" />
           <span className="text-sm font-bold tracking-tight">QueryLab</span>
           <div className="ml-4 flex items-center gap-1">
             {(["SQL", "GraphQL"] as const).map((d) => (
               <Button
                 key={d}
-                variant={dialect === d ? "secondary" : "ghost"}
+                variant={dialect === d ? "sharp-accent" : "sharp"}
                 size="xs"
                 onClick={() => setDialect(d)}
                 aria-pressed={dialect === d}
@@ -71,7 +71,7 @@ function App() {
               {SQL_DIALECTS.map((d) => (
                 <Button
                   key={d}
-                  variant={sqlDialect === d ? "secondary" : "ghost"}
+                  variant={sqlDialect === d ? "sharp-accent" : "sharp"}
                   size="xs"
                   onClick={() => setSqlDialect(d)}
                   aria-pressed={sqlDialect === d}
@@ -82,59 +82,53 @@ function App() {
               ))}
             </div>
           )}
-          <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 ml-auto">
+          <span className="text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 ml-auto uppercase tracking-widest">
             {dialect === "SQL" ? `Entorno ${sqlDialect}` : "Entorno GraphQL"}
           </span>
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={toggleSound}
             aria-label={soundEnabled() ? "Desactivar sonido" : "Activar sonido"}
             title={soundEnabled() ? "Desactivar sonido" : "Activar sonido"}
-            className="text-muted-foreground hover:text-indigo-400"
           >
             {soundEnabled() ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
           </Button>
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
             title={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
-            className="text-muted-foreground hover:text-amber-400"
           >
             {theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
           </Button>
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={() => setShortcutsOpen(true)}
             aria-label="Atajos de teclado"
             title="Atajos de teclado"
-            className="text-muted-foreground hover:text-indigo-400"
           >
             <Keyboard className="size-3.5" />
           </Button>
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={() => setPresentation(true)}
             aria-label="Modo presentación"
             title="Modo presentación"
-            className="text-muted-foreground hover:text-green-400"
           >
             <Maximize2 className="size-3.5" />
           </Button>
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={resetDatabase}
             aria-label="Restaurar base de datos"
             title="Restaurar la base de datos a su estado original"
-            className="text-muted-foreground hover:text-orange-400"
           >
             <RotateCcw className="size-3.5" />
-            Restaurar BD
           </Button>
         </header>
       )}
@@ -142,12 +136,12 @@ function App() {
       {presentation && (
         <div className="absolute top-2 right-2 z-50">
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={() => setPresentation(false)}
             aria-label="Salir de modo presentación"
             title="Salir de modo presentación"
-            className="bg-card/80 backdrop-blur border border-border text-muted-foreground hover:text-green-400"
+            className="bg-card/80 backdrop-blur"
           >
             <Minimize2 className="size-3.5" />
           </Button>

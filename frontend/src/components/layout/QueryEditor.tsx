@@ -109,12 +109,12 @@ export default function QueryEditor({ value, onChange, onExecute, loading, theme
       <div className="flex items-center justify-between px-4 h-10 border-b border-border bg-muted/30 shrink-0">
         <span className="text-xs font-medium text-muted-foreground">Consulta SQL</span>
         <div className="flex items-center gap-1">
-          <span className="text-[10px] text-muted-foreground mr-1 hidden sm:inline">
+          <span className="text-[10px] text-muted-foreground/50 mr-1 hidden sm:inline">
             Ctrl+Intro
           </span>
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={handleFormat}
             disabled={!value.trim()}
             aria-label="Formatear consulta"
@@ -123,14 +123,16 @@ export default function QueryEditor({ value, onChange, onExecute, loading, theme
             <Sparkles className="size-3.5" />
           </Button>
           <Button
-            variant="ghost"
-            size="xs"
+            variant="sharp"
+            size="icon-xs"
             onClick={handleReset}
             aria-label="Limpiar consulta"
+            title="Limpiar consulta"
           >
             <RotateCcw className="size-3.5" />
           </Button>
           <Button
+            variant="sharp-accent"
             size="xs"
             onClick={onExecute}
             disabled={loading || !value.trim()}

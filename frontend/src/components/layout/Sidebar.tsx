@@ -32,24 +32,24 @@ function SchemaTable({ table, onSelectTable, onDragTable }: {
     <div
       draggable
       onDragStart={handleDragStart}
-      className="rounded cursor-grab active:cursor-grabbing"
+      className="cursor-grab active:cursor-grabbing"
     >
       <Button
         variant="ghost"
         size="sm"
-        className="w-full justify-start gap-2 text-sm font-normal group"
+        className="w-full justify-start gap-2 text-sm font-normal group py-2"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
         aria-label={`${open ? "Ocultar" : "Mostrar"} columnas de ${table.name}`}
       >
         {open ? (
-          <ChevronDown className="size-3.5 text-muted-foreground" />
+          <ChevronDown className="size-3.5 text-accent" />
         ) : (
           <ChevronRight className="size-3.5 text-muted-foreground" />
         )}
-        <Table2 className="size-4 text-indigo-400" />
+        <Table2 className="size-4 text-accent" />
         <span>{table.name}</span>
-        <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0">
+        <Badge variant="sharp" className="ml-auto">
           {table.columns.length}
         </Badge>
         <span
@@ -57,7 +57,7 @@ function SchemaTable({ table, onSelectTable, onDragTable }: {
           tabIndex={0}
           onClick={(e) => { e.stopPropagation(); onSelectTable(table.name) }}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onSelectTable(table.name) } }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-indigo-400 hover:text-indigo-300 cursor-pointer"
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-accent hover:text-accent/80 cursor-pointer"
           title={`SELECT * FROM ${table.name} LIMIT 5`}
           aria-label={`Ejecutar SELECT * FROM ${table.name} LIMIT 5`}
         >
@@ -69,7 +69,7 @@ function SchemaTable({ table, onSelectTable, onDragTable }: {
           {table.columns.map((col) => (
             <div
               key={col.name}
-              className="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors rounded"
+              className="flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <Columns3 className="size-3 shrink-0" />
               <span className="font-mono">{col.name}</span>
@@ -104,7 +104,7 @@ export function Sidebar({ onSelectTable, history, onSelectHistory, onClearHistor
         <button
           onClick={() => setTab("schema")}
           className={`flex-1 flex items-center justify-center gap-1.5 h-10 text-xs font-medium transition-colors ${
-            tab === "schema" ? "text-foreground border-b-2 border-indigo-400" : "text-muted-foreground hover:text-foreground"
+            tab === "schema" ? "text-accent border-b-2 border-accent" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Database className="size-3.5" />
@@ -113,13 +113,15 @@ export function Sidebar({ onSelectTable, history, onSelectHistory, onClearHistor
         <button
           onClick={() => setTab("history")}
           className={`flex-1 flex items-center justify-center gap-1.5 h-10 text-xs font-medium transition-colors ${
-            tab === "history" ? "text-foreground border-b-2 border-indigo-400" : "text-muted-foreground hover:text-foreground"
+            tab === "history" ? "text-accent border-b-2 border-accent" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Clock className="size-3.5" />
           Historial
           {history.length > 0 && (
-            <span className="text-[10px] text-muted-foreground">({history.length})</span>
+            <Badge variant="sharp" className="ml-1">
+              {history.length}
+            </Badge>
           )}
         </button>
       </div>

@@ -88,8 +88,8 @@ function exportMarkdown(result: QueryResponse) {
 function EmptyState({ onExecute }: { onExecute: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
-      <div className="size-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center ring-1 ring-indigo-500/20">
-        <Brain className="size-8 text-indigo-400" />
+      <div className="size-16 bg-muted flex items-center justify-center border border-border">
+        <Brain className="size-8 text-accent" />
       </div>
       <div>
         <h3 className="text-base font-semibold text-foreground">
@@ -97,16 +97,16 @@ function EmptyState({ onExecute }: { onExecute: () => void }) {
         </h3>
         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
           Escribí una consulta SQL en el editor de arriba y presioná{" "}
-          <kbd className="px-1.5 py-0.5 rounded bg-muted text-xs font-mono">
+          <kbd className="px-1.5 py-0.5 bg-muted text-xs font-mono border border-border">
             Ejecutar
           </kbd>{" "}
           para ver los resultados aquí.
         </p>
         <p className="text-xs text-muted-foreground mt-2">
-          También podés separar varias consultas con <kbd className="px-1 rounded bg-muted text-[10px] font-mono">;</kbd> y se mostrarán en pestañas.
+          También podés separar varias consultas con <kbd className="px-1 bg-muted text-[10px] font-mono border border-border">;</kbd> y se mostrarán en pestañas.
         </p>
       </div>
-      <Button size="sm" onClick={onExecute} aria-label="Ejecutar consulta">
+      <Button variant="sharp-accent" size="sm" onClick={onExecute} aria-label="Ejecutar consulta">
         <Play className="size-3.5" />
         Ejecutar consulta
       </Button>
@@ -183,7 +183,7 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
   return (
     <div className="flex flex-col flex-1">
       <ScrollArea className="flex-1">
-        <div className="p-4">
+        <div className="p-2">
           {pageRows.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">
               Consulta ejecutada correctamente. No se devolvieron filas.
@@ -191,7 +191,7 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
           ) : (
             <div className="overflow-x-auto">
               <table
-                className="w-full text-sm border-collapse"
+                className="w-full text-xs border-collapse"
                 role="table"
                 aria-label="Resultados de la consulta"
               >
@@ -200,7 +200,7 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
                     {columns.map((col) => (
                       <th
                         key={col}
-                        className="text-left px-3 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider"
+                        className="text-left px-2 py-1 text-[10px] font-semibold text-accent uppercase tracking-wider"
                         scope="col"
                       >
                         {col}
@@ -212,12 +212,12 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
                   {pageRows.map((row, i) => (
                     <tr
                       key={i}
-                      className="border-b border-border/50 hover:bg-muted/30 transition-colors"
+                      className="border-b border-border/30 hover:bg-muted/30 transition-colors"
                     >
                       {columns.map((col) => (
                         <td
                           key={col}
-                          className="px-3 py-2 text-sm font-mono text-foreground/90"
+                          className="px-2 py-0.5 text-xs font-mono text-foreground/90"
                         >
                           {String(getRowValue(row, col) ?? "")}
                         </td>
@@ -231,39 +231,39 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
         </div>
       </ScrollArea>
       {hasPagination && (
-        <div className="flex items-center justify-between px-4 h-10 border-t border-border shrink-0 bg-muted/20">
-          <span className="text-xs text-muted-foreground">
+        <div className="flex items-center justify-between px-4 h-8 border-t border-border shrink-0 bg-muted/20">
+          <span className="text-[10px] text-muted-foreground">
             Página {page + 1} de {totalPages} ({totalRows} filas)
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <Button
-              variant="ghost"
-              size="xs"
+              variant="sharp"
+              size="icon-xs"
               disabled={page === 0}
               onClick={() => setPage((p) => p - 1)}
               aria-label="Página anterior"
             >
-              <ChevronLeft className="size-3.5" />
+              <ChevronLeft className="size-3" />
             </Button>
             {Array.from({ length: totalPages }, (_, i) => (
               <Button
                 key={i}
-                variant={i === page ? "secondary" : "ghost"}
-                size="xs"
-                className="text-[11px] min-w-[24px]"
+                variant={i === page ? "sharp-accent" : "sharp"}
+                size="icon-xs"
+                className="text-[10px] min-w-[20px]"
                 onClick={() => setPage(i)}
               >
                 {i + 1}
               </Button>
             ))}
             <Button
-              variant="ghost"
-              size="xs"
+              variant="sharp"
+              size="icon-xs"
               disabled={page >= totalPages - 1}
               onClick={() => setPage((p) => p + 1)}
               aria-label="Página siguiente"
             >
-              <ChevronRight className="size-3.5" />
+              <ChevronRight className="size-3" />
             </Button>
           </div>
         </div>
@@ -289,9 +289,9 @@ function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
               <button
                 key={i}
                 onClick={() => onSelectResult(i)}
-                className={`text-[11px] px-2 py-0.5 rounded transition-colors ${
+                className={`text-[11px] px-2 py-0.5 transition-colors ${
                   i === currentResultIndex
-                    ? "bg-indigo-500/20 text-indigo-300 font-medium"
+                    ? "bg-accent/20 text-accent font-medium border-b border-accent"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -301,11 +301,11 @@ function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
             ))}
           </div>
         )}
-        <Badge variant="secondary" className="gap-1">
+        <Badge variant="sharp" className="gap-1">
           <Table2 className="size-3" />
           {result.rows} fila{result.rows !== 1 ? "s" : ""}
         </Badge>
-        <Badge variant="outline" className="gap-1">
+        <Badge variant="sharp" className="gap-1">
           <Timer className="size-3" />
           {result.executionTimeMs}ms
         </Badge>
@@ -314,7 +314,7 @@ function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
             <span>Tablas:</span>
             {result.tables.map((t, i) => (
               <span key={t}>
-                <code className="text-indigo-400">{t}</code>
+                <code className="text-accent">{t}</code>
                 {i < result.tables.length - 1 && (
                   <ArrowRight className="size-3 inline mx-0.5" />
                 )}
@@ -323,13 +323,13 @@ function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
           </div>
         )}
         <div className="flex items-center gap-0.5">
-          <Button variant="ghost" size="xs" onClick={() => exportCsv(result)} aria-label="Exportar CSV" title="Exportar CSV">
+          <Button variant="sharp" size="icon-xs" onClick={() => exportCsv(result)} aria-label="Exportar CSV" title="Exportar CSV">
             <FileSpreadsheet className="size-3.5" />
           </Button>
-          <Button variant="ghost" size="xs" onClick={() => exportJson(result)} aria-label="Exportar JSON" title="Exportar JSON">
+          <Button variant="sharp" size="icon-xs" onClick={() => exportJson(result)} aria-label="Exportar JSON" title="Exportar JSON">
             <FileJson className="size-3.5" />
           </Button>
-          <Button variant="ghost" size="xs" onClick={() => exportMarkdown(result)} aria-label="Exportar Markdown" title="Exportar Markdown">
+          <Button variant="sharp" size="icon-xs" onClick={() => exportMarkdown(result)} aria-label="Exportar Markdown" title="Exportar Markdown">
             <FileText className="size-3.5" />
           </Button>
         </div>
@@ -398,7 +398,7 @@ export function ResultCanvas({
     >
       <div className="flex items-center gap-1 px-4 h-9 border-b border-border bg-muted/20 shrink-0">
         <Button
-          variant={view === "results" ? "secondary" : "ghost"}
+          variant={view === "results" ? "sharp-accent" : "sharp"}
           size="xs"
           onClick={() => setView("results")}
           aria-pressed={view === "results"}
@@ -407,13 +407,13 @@ export function ResultCanvas({
           Resultados
         </Button>
         <Button
-          variant={view === "graph" ? "secondary" : "ghost"}
+          variant={view === "graph" ? "sharp-accent" : "sharp"}
           size="xs"
           onClick={() => setView("graph")}
           aria-pressed={view === "graph"}
         >
           <GitBranch className="size-3.5" />
-          Grafo del esquema
+          SCHEMA GRAPH
         </Button>
       </div>
 
