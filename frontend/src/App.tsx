@@ -151,7 +151,7 @@ function App() {
       <div className="flex flex-1 min-h-0">
         {!presentation && (
           <Sidebar
-            onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName} LIMIT 100`)}
+            onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName}`)}
             history={history}
             onSelectHistory={(query) => setAndExecute(query)}
             onClearHistory={clearHistory}
