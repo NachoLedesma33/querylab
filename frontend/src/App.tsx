@@ -1,6 +1,7 @@
-import { lazy, Suspense, useState, useCallback } from "react"
+import { lazy, Suspense, useState, useCallback, useEffect } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { ResultCanvas } from "@/components/layout/ResultCanvas"
+import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
 import { ShortcutsDialog } from "@/components/layout/ShortcutsDialog"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
@@ -29,6 +30,7 @@ function App() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [presentation, setPresentation] = useState(false)
   const [draggedTable, setDraggedTable] = useState<string | null>(null)
+  const [quickStartOpen, setQuickStartOpen] = useState(false)
 
   const {
     query, dialect, sqlDialect, status, result, error, results, currentResultIndex,
@@ -37,6 +39,21 @@ function App() {
   } = useQueryLab()
   const { theme, toggleTheme } = useTheme()
   const { soundEnabled, toggleSound, playSuccess } = useSound()
+
+  useEffect(() => {
+    const hasHistory = history.length > 0
+    const onboardingProgress = localStorage.getItem('querylab-onboarding')
+    const shouldShowQuickStart = !hasHistory || onboardingProgress === null
+    if (shouldShowQuickStart && !quickStartOpen) {
+      setQuickStartOpen(true)
+    }
+  }, [history, quickStartOpen])
+
+  useEffect(() => {
+    if (status === "success" && result) {
+      localStorage.setItem('querylab-last-success', new Date().toISOString())
+    }
+  }, [status, result])
 
   const handleExecute = useCallback(() => {
     execute().then(() => {
@@ -189,6 +206,17 @@ function App() {
       </div>
 
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <QuickStartDialog
+        open={quickStartOpen}
+        onClose={() => setQuickStartOpen(false)}
+        onExecute={(query) => {
+          setQuery(query)
+          execute()
+        }}
+        onQueryComplete={() => {
+          localStorage.setItem('querylab-onboarding', 'completed')
+        }}
+      />
     </div>
   )
 }
