@@ -52,17 +52,14 @@ function SchemaTable({ table, onSelectTable, onDragTable }: {
         <Badge variant="sharp" className="ml-auto">
           {table.columns.length}
         </Badge>
-        <span
-          role="button"
-          tabIndex={0}
+        <button
           onClick={(e) => { e.stopPropagation(); onSelectTable(table.name) }}
-          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); onSelectTable(table.name) } }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-accent hover:text-accent/80 cursor-pointer"
-          title={`SELECT * FROM ${table.name} LIMIT 5`}
-          aria-label={`Ejecutar SELECT * FROM ${table.name} LIMIT 5`}
+          className="opacity-0 group-hover:opacity-100 transition-opacity text-accent hover:text-accent/80 cursor-pointer p-1"
+          title={`Ver datos de ${table.name}`}
+          aria-label={`Ver datos de ${table.name}`}
         >
           <Play className="size-3" />
-        </span>
+        </button>
       </Button>
       {open && (
         <div className="ml-6 border-l border-border pl-3 py-1 space-y-0.5">
