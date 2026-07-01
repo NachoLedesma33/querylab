@@ -1,7 +1,6 @@
 # Node
 node_modules/
 dist/
-
 # Java / Maven
 target/
 *.class
@@ -10,18 +9,18 @@ target/
 .mvn/
 mvnw
 mvnw.cmd
-
 # IDE
 .idea/
 *.iml
 .vscode/
 *.swp
 *.swo
-
 # OS
 .DS_Store
 Thumbs.db
-
 # Env
 .env
 .env.local
+tempo/.tempo/
+tempo/node_modules/
+tempo/dist/

@@ -1,9 +1,9 @@
 import { useRef, useCallback, useEffect } from "react"
 import Editor, { type OnMount } from "@monaco-editor/react"
-import { Button } from "@/components/ui/button"
+import { Button } from "../ui/button"
 import { Play, RotateCcw, Sparkles } from "lucide-react"
 import { format } from "sql-formatter"
-import { defaultSchema } from "@/schema"
+import { defaultSchema } from "../../schema"
 
 interface QueryEditorProps {
   value: string

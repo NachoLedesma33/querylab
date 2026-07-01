@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react"
-import type { QueryResponse } from "@/types"
+import type { QueryResponse } from "../types"
 import { useQueryHistory } from "./useQueryHistory"
 
 type Status = "idle" | "loading" | "error" | "success"

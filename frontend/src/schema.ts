@@ -1,4 +1,4 @@
-import type { TableSchema } from "@/types"
+import type { TableSchema } from "./types"
 
 export const defaultSchema: TableSchema[] = [
   {

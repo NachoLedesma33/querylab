@@ -13,7 +13,7 @@ import {
 import "@xyflow/react/dist/style.css"
 import TableNode, { type TableNodeType } from "./TableNode"
 import AnimatedEdge, { type AnimatedEdgeType } from "./AnimatedEdge"
-import type { TableSchema } from "@/types"
+import type { TableSchema } from "../../types"
 import type { PipelineState } from "./pipeline-types"
 
 const nodeTypes = { tableNode: TableNode }

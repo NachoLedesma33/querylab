@@ -1,9 +1,9 @@
 import { useState, type DragEvent } from "react"
-import type { HistoryEntry } from "@/hooks/useQueryHistory"
-import { defaultSchema } from "@/schema"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
+import type { HistoryEntry } from "../../hooks/useQueryHistory"
+import { defaultSchema } from "../../schema"
+import { ScrollArea } from "../ui/scroll-area"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
 import {
   Database,
   ChevronRight,
