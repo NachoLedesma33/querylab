@@ -66,6 +66,129 @@ const defaultSchema: TableSchema[] = [
       { name: "completed", type: "BOOLEAN" },
     ],
   },
+  {
+    name: "directors",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "name", type: "VARCHAR(255)" },
+      { name: "birth_date", type: "DATE" },
+      { name: "nationality", type: "VARCHAR(100)" },
+      { name: "awards", type: "INT" },
+    ],
+  },
+  {
+    name: "actors",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "name", type: "VARCHAR(255)" },
+      { name: "birth_date", type: "DATE" },
+      { name: "nationality", type: "VARCHAR(100)" },
+      { name: "active", type: "BOOLEAN" },
+    ],
+  },
+  {
+    name: "movie_actors",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "movie_id", type: "BIGINT FK" },
+      { name: "actor_id", type: "BIGINT FK" },
+      { name: "role", type: "VARCHAR(100)" },
+    ],
+  },
+  {
+    name: "reviews",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "user_id", type: "BIGINT FK" },
+      { name: "movie_id", type: "BIGINT FK" },
+      { name: "rating", type: "INT" },
+      { name: "comment", type: "TEXT" },
+      { name: "created_at", type: "TIMESTAMP" },
+    ],
+  },
+  {
+    name: "playlists",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "user_id", type: "BIGINT FK" },
+      { name: "name", type: "VARCHAR(255)" },
+      { name: "description", type: "TEXT" },
+      { name: "created_at", type: "TIMESTAMP" },
+      { name: "is_public", type: "BOOLEAN" },
+    ],
+  },
+  {
+    name: "playlist_items",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "playlist_id", type: "BIGINT FK" },
+      { name: "movie_id", type: "BIGINT FK" },
+      { name: "added_at", type: "TIMESTAMP" },
+      { name: "position", type: "INT" },
+    ],
+  },
+  {
+    name: "genres",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "name", type: "VARCHAR(100)" },
+      { name: "description", type: "TEXT" },
+    ],
+  },
+  {
+    name: "payments",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "user_id", type: "BIGINT FK" },
+      { name: "amount", type: "DECIMAL(10,2)" },
+      { name: "payment_date", type: "TIMESTAMP" },
+      { name: "method", type: "VARCHAR(50)" },
+      { name: "status", type: "VARCHAR(20)" },
+    ],
+  },
+  {
+    name: "notifications",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "user_id", type: "BIGINT FK" },
+      { name: "title", type: "VARCHAR(255)" },
+      { name: "message", type: "TEXT" },
+      { name: "is_read", type: "BOOLEAN" },
+      { name: "created_at", type: "TIMESTAMP" },
+      { name: "type", type: "VARCHAR(50)" },
+    ],
+  },
+  {
+    name: "settings",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "user_id", type: "BIGINT FK" },
+      { name: "language", type: "VARCHAR(10)" },
+      { name: "theme", type: "VARCHAR(20)" },
+      { name: "notifications_enabled", type: "BOOLEAN" },
+      { name: "autoplay", type: "BOOLEAN" },
+      { name: "quality", type: "VARCHAR(20)" },
+    ],
+  },
+  {
+    name: "watchlists",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "user_id", type: "BIGINT FK" },
+      { name: "name", type: "VARCHAR(255)" },
+      { name: "created_at", type: "TIMESTAMP" },
+    ],
+  },
+  {
+    name: "watchlist_items",
+    columns: [
+      { name: "id", type: "BIGINT PK" },
+      { name: "watchlist_id", type: "BIGINT FK" },
+      { name: "movie_id", type: "BIGINT FK" },
+      { name: "added_at", type: "TIMESTAMP" },
+      { name: "priority", type: "INT" },
+    ],
+  },
 ]
 
 function buildNodes(
@@ -73,12 +196,13 @@ function buildNodes(
   pipeline: PipelineState,
   tables: string[]
 ): TableNodeType[] {
-  const gapX = 320
-  const gapY = 180
+  const cols = 4
+  const gapX = 280
+  const gapY = 220
 
   return schema.map((table, i) => {
-    const isLeft = i < 2
-    const index = isLeft ? i : i - 2
+    const col = i % cols
+    const row = Math.floor(i / cols)
     const isInvolved = tables.includes(table.name)
     const isHighlighted = pipeline.active && isInvolved
 
@@ -94,8 +218,8 @@ function buildNodes(
       id: table.name,
       type: "tableNode",
       position: {
-        x: isLeft ? 0 : gapX * 1.8,
-        y: index * gapY,
+        x: col * gapX,
+        y: row * gapY,
       },
       data: {
         label: table.name,
@@ -118,13 +242,26 @@ function buildEdges(pipeline: PipelineState): AnimatedEdgeType[] {
     { id: "e-users-subscriptions", source: "users", target: "subscriptions" },
     { id: "e-users-watch_history", source: "users", target: "watch_history" },
     { id: "e-movies-watch_history", source: "movies", target: "watch_history" },
+    { id: "e-movies-movie_actors", source: "movies", target: "movie_actors" },
+    { id: "e-actors-movie_actors", source: "actors", target: "movie_actors" },
+    { id: "e-users-reviews", source: "users", target: "reviews" },
+    { id: "e-movies-reviews", source: "movies", target: "reviews" },
+    { id: "e-users-playlists", source: "users", target: "playlists" },
+    { id: "e-playlists-playlist_items", source: "playlists", target: "playlist_items" },
+    { id: "e-movies-playlist_items", source: "movies", target: "playlist_items" },
+    { id: "e-users-payments", source: "users", target: "payments" },
+    { id: "e-users-notifications", source: "users", target: "notifications" },
+    { id: "e-users-settings", source: "users", target: "settings" },
+    { id: "e-users-watchlists", source: "users", target: "watchlists" },
+    { id: "e-watchlists-watchlist_items", source: "watchlists", target: "watchlist_items" },
+    { id: "e-movies-watchlist_items", source: "movies", target: "watchlist_items" },
   ]
 
   return edgeDefs.map((def) => ({
     ...def,
     type: "animatedEdge",
-    style: { stroke: "#818cf8", strokeWidth: 2 },
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#818cf8" },
+    style: { stroke: "#d4a017", strokeWidth: 1 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "#d4a017" },
     data: { active: pipeline.currentStep === "join" && pipeline.active },
   }))
 }
