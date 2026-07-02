@@ -115,6 +115,7 @@ export function useQueryLab() {
         error: err instanceof Error ? err.message : "Error desconocido",
         results: [],
       }))
+      throw err
     }
   }, [postQuery, addEntry])
 

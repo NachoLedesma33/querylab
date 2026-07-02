@@ -167,9 +167,9 @@ function App() {
       <div className="flex flex-1 min-h-0">
         {!presentation && (
           <Sidebar
-            onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName}`)}
+            onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName}`).catch(() => {})}
             history={history}
-            onSelectHistory={(query) => setAndExecute(query)}
+            onSelectHistory={(query) => setAndExecute(query).catch(() => {})}
             onClearHistory={clearHistory}
             onDragTable={(tableName) => setDraggedTable(tableName)}
           />

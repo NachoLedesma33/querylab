@@ -61,7 +61,11 @@ public class SqlQueryExecutor implements QueryExecutor {
         try {
             rows = jdbcTemplate.queryForList(safeQuery);
         } catch (Exception e) {
-            String msg = e.getMessage();
+            Throwable cause = e;
+            while (cause.getCause() != null && cause.getCause() != cause) {
+                cause = cause.getCause();
+            }
+            String msg = cause.getMessage();
             if (msg != null && msg.contains("timeout")) {
                 throw new IllegalArgumentException(
                     "La consulta agotó el tiempo de espera (" + QUERY_TIMEOUT_SECONDS + " segundos). " +
@@ -69,7 +73,9 @@ public class SqlQueryExecutor implements QueryExecutor {
                 );
             }
             throw new IllegalArgumentException(
-                "Error al ejecutar la consulta SQL: " + (msg != null ? msg : "Error desconocido")
+                "Error al ejecutar la consulta SQL: " + (msg != null ? msg : "Error desconocido") +
+                ". La base de datos puede no estar inicializada correctamente. " +
+                "Probá usando 'Restaurar BD' en el menú superior."
             );
         }
 
