@@ -4,12 +4,14 @@ import { ResultCanvas } from "@/components/layout/ResultCanvas"
 import { ShortcutsDialog } from "@/components/layout/ShortcutsDialog"
 import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
 import { QueryTemplates } from "@/components/layout/QueryTemplates"
+import { SaveQueryDialog } from "@/components/layout/SaveQueryDialog"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
 import { useSound } from "@/hooks/useSound"
 import { useQueryFavorites } from "@/hooks/useQueryFavorites"
+import { useQuerySaves } from "@/hooks/useQuerySaves"
 import { Button } from "@/components/ui/button"
-import { Terminal, RotateCcw, Sun, Moon, Keyboard, Maximize2, Minimize2, Volume2, VolumeX, FileCode } from "lucide-react"
+import { Terminal, RotateCcw, Sun, Moon, Keyboard, Maximize2, Minimize2, Volume2, VolumeX, FileCode, Save } from "lucide-react"
 
 const QueryEditor = lazy(() => import("@/components/layout/QueryEditor"))
 
@@ -31,6 +33,7 @@ function EditorSkeleton() {
 function App() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
+  const [savesOpen, setSavesOpen] = useState(false)
   const [presentation, setPresentation] = useState(false)
   const [draggedTable, setDraggedTable] = useState<string | null>(null)
   const [quickStartOpen, setQuickStartOpen] = useState(false)
@@ -43,6 +46,7 @@ function App() {
   const { theme, toggleTheme } = useTheme()
   const { soundEnabled, toggleSound, playSuccess } = useSound()
   const { favorites, addFavorite, removeFavorite, isFavorite } = useQueryFavorites()
+  const { saved, saveQuery, deleteSaved } = useQuerySaves()
 
   useEffect(() => {
     const hasHistory = history.length > 0
@@ -80,6 +84,15 @@ function App() {
     setTemplatesOpen(false)
   }, [setQuery])
 
+  const handleSaveQuery = useCallback((name: string, description?: string) => {
+    saveQuery(name, query, dialect, sqlDialect, description)
+  }, [query, dialect, sqlDialect, saveQuery])
+
+  const handleLoadQuery = useCallback((q: string) => {
+    setQuery(q)
+    setSavesOpen(false)
+  }, [setQuery])
+
   return (
     <div className="neoclassic h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {!presentation && (
@@ -104,6 +117,9 @@ function App() {
           )}
           <Button variant="sharp" size="icon-xs" onClick={() => setTemplatesOpen(true)} aria-label="Templates de consultas" title="Templates de consultas" className="ml-2">
             <FileCode className="size-3.5" />
+          </Button>
+          <Button variant="sharp" size="icon-xs" onClick={() => setSavesOpen(true)} aria-label="Consultas guardadas" title="Consultas guardadas">
+            <Save className="size-3.5" />
           </Button>
           <span className="text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 ml-auto uppercase tracking-widest">
             {dialect === "SQL" ? `Entorno ${sqlDialect}` : "Entorno GraphQL"}
@@ -177,10 +193,15 @@ function App() {
         </main>
       </div>
 
-      <QueryTemplates
-        open={templatesOpen}
-        onClose={() => setTemplatesOpen(false)}
-        onInsert={handleInsertTemplate}
+      <QueryTemplates open={templatesOpen} onClose={() => setTemplatesOpen(false)} onInsert={handleInsertTemplate} />
+      <SaveQueryDialog
+        open={savesOpen}
+        onClose={() => setSavesOpen(false)}
+        saved={saved}
+        onSave={handleSaveQuery}
+        onLoad={handleLoadQuery}
+        onDelete={deleteSaved}
+        currentQuery={query}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <Suspense fallback={null}>
