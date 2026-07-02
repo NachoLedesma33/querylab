@@ -5,6 +5,7 @@ import { ShortcutsDialog } from "@/components/layout/ShortcutsDialog"
 import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
 import { QueryTemplates } from "@/components/layout/QueryTemplates"
 import { SaveQueryDialog } from "@/components/layout/SaveQueryDialog"
+import { SkipLink } from "@/components/layout/SkipLink"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
 import { useSound } from "@/hooks/useSound"
@@ -113,6 +114,7 @@ function App() {
 
   return (
     <div className="neoclassic h-screen flex flex-col bg-background text-foreground overflow-hidden">
+      <SkipLink />
       {!presentation && (
         <header className="h-12 border-b border-border flex items-center px-4 gap-2 bg-header shrink-0" role="banner">
           <Terminal className="size-5 text-accent" />
@@ -168,7 +170,7 @@ function App() {
         </div>
       )}
 
-      <div className="flex flex-1 min-h-0">
+      <main className="flex flex-1 min-h-0" id="main-content" role="main">
         {!presentation && (
           <Sidebar
             onSelectTable={(tableName) => setAndExecute(`SELECT * FROM ${tableName}`).catch(() => {})}
@@ -209,7 +211,7 @@ function App() {
             />
           </div>
         </main>
-      </div>
+      </main>
 
       <QueryTemplates open={templatesOpen} onClose={() => setTemplatesOpen(false)} onInsert={handleInsertTemplate} />
       <SaveQueryDialog

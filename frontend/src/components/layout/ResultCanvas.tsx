@@ -9,6 +9,7 @@ import { Badge } from "../ui/badge"
 import { QueryVisualizer } from "../flow/QueryVisualizer"
 import { StepPipeline } from "../flow/StepPipeline"
 import { ColumnStats } from "./ColumnStats"
+import { VirtualTable } from "./VirtualTable"
 import type { QueryResponse } from "../../types"
 import type { PipelineStep, PipelineState } from "../flow/pipeline-types"
 import {
@@ -109,7 +110,7 @@ function exportXml(result: QueryResponse) {
   download("resultados.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<resultados>\n${rows.join("\n")}\n</resultados>`)
 }
 
-function EmptyState({ onExecute }: { onExecute: () => void }) {
+export function EmptyState({ onExecute }: { onExecute: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
       <div className="size-16 bg-muted flex items-center justify-center border border-border">
@@ -134,7 +135,7 @@ function EmptyState({ onExecute }: { onExecute: () => void }) {
   )
 }
 
-function LoadingState() {
+export function LoadingState() {
   return (
     <div className="p-6 space-y-4" role="status" aria-label="Cargando resultados">
       <div className="flex items-center gap-3">
@@ -154,7 +155,7 @@ function LoadingState() {
   )
 }
 
-function ErrorState({ message }: { message: string }) {
+export function ErrorState({ message }: { message: string }) {
   const isSecurity = message.includes("⚠ Seguridad:") || message.toLowerCase().includes("forbidden") || message.toLowerCase().includes("bloqueada")
   const isTimeout = message.toLowerCase().includes("timeout") || message.toLowerCase().includes("tiempo")
   const isTooMany = message.toLowerCase().includes("too many requests") || message.toLowerCase().includes("demasiadas")
@@ -253,15 +254,18 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
         </span>
       </div>
       {statsCol && <ColumnStats column={statsCol} rows={sorted} onClose={() => setStatsCol(null)} anchorEl={headerRefs.current[statsCol]} />}
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-2 min-h-full">
-          {pageRows.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              {filterText ? `Sin resultados para "${filterText}"` : "Consulta ejecutada correctamente. No se devolvieron filas."}
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse" role="table" aria-label="Resultados de la consulta">
+      {sorted.length > 500 ? (
+        <VirtualTable rows={pageRows} columns={columns} getRowValue={getRowValue} />
+      ) : (
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="p-2 min-h-full">
+            {pageRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                {filterText ? `Sin resultados para "${filterText}"` : "Consulta ejecutada correctamente. No se devolvieron filas."}
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border-collapse" role="table" aria-label="Resultados de la consulta">
                   <thead>
                     <tr className="border-b border-border">
                       {columns.map((col) => {
@@ -287,22 +291,23 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
                       })}
                     </tr>
                   </thead>
-                <tbody>
-                  {pageRows.map((row, i) => (
-                    <tr key={i} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
-                      {columns.map((col) => (
-                        <td key={col} className="px-2 py-0.5 text-xs font-mono text-foreground/90">
-                          {String(getRowValue(row, col) ?? "")}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+                  <tbody>
+                    {pageRows.map((row, i) => (
+                      <tr key={i} className="border-b border-border/30 hover:bg-muted/30 transition-colors">
+                        {columns.map((col) => (
+                          <td key={col} className="px-2 py-0.5 text-xs font-mono text-foreground/90">
+                            {String(getRowValue(row, col) ?? "")}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      )}
       {(hasPagination || sorted.length > 0) && (
         <div className="flex items-center justify-between px-3 h-8 border-t border-border shrink-0 bg-muted/20">
           <div className="flex items-center gap-1">
