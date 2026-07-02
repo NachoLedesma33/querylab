@@ -3,23 +3,34 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { X, Check, ArrowRight, Sparkles, Database, GitBranch, Filter } from "lucide-react"
+import { X, Check, ArrowRight, Sparkles, Database, GitBranch, Filter, Loader2, Zap } from "lucide-react"
 
 interface QuickStartDialogProps {
   open: boolean
   onClose: () => void
-  onExecute: (query: string) => void
+  onExecute: (query: string) => Promise<void>
   onQueryComplete?: () => void
 }
 
-const exercises = [
+interface Exercise {
+  id: string
+  icon: typeof Database | typeof GitBranch | typeof Filter
+  title: string
+  description: string
+  query: string
+  hint: string
+  step: number
+  total: number
+}
+
+const exercises: Exercise[] = [
   {
     id: "explore",
     icon: Database,
     title: "Explorar una tabla",
-    description: "Haz clic en una tabla en el sidebar y usa el botón de play para ver todos sus datos.",
+    description: "Ejecutá 'SELECT * FROM movies' para ver todas las películas.",
     query: "SELECT * FROM movies",
-    hint: "Dale play a la tabla 'movies' en el sidebar izquierdo",
+    hint: "Ejecutá la query haciendo click en 'Ejecutar consulta'",
     step: 1,
     total: 3
   },
@@ -27,9 +38,9 @@ const exercises = [
     id: "join",
     icon: GitBranch,
     title: "Hacer una JOIN",
-    description: "Conecta tablas relacionadas con una consulta JOIN para ver datos relacionados.",
+    description: "Ejecutá esta consulta JOIN para ver relaciones entre tablas.",
     query: "SELECT u.name, m.title, w.watched_at FROM users u JOIN watch_history w ON u.id = w.user_id JOIN movies m ON w.movie_id = m.id LIMIT 10",
-    hint: "Esta query une users, watch_history y movies en una sola consulta",
+    hint: "Ejecutá la query haciendo click en 'Ejecutar consulta'",
     step: 2,
     total: 3
   },
@@ -37,39 +48,79 @@ const exercises = [
     id: "filter",
     icon: Filter,
     title: "Buscar por condición",
-    description: "Filtra datos usando la cláusula WHERE para encontrar registros específicos.",
+    description: "Ejecutá esta query con WHERE para filtrar películas.",
     query: "SELECT title, rating FROM movies WHERE rating > 8.0 ORDER BY rating DESC",
-    hint: "Buscá películas con rating superior a 8.0",
+    hint: "Ejecutá la query haciendo click en 'Ejecutar consulta'",
     step: 3,
     total: 3
   }
 ]
 
+interface QuickStartState {
+  completed: Set<string>
+  currentQuery: string
+  executing: boolean
+}
+
 export function QuickStartDialog({ open, onClose, onExecute, onQueryComplete }: QuickStartDialogProps) {
-  const [completed, setCompleted] = useState<Set<string>>(new Set())
-  const [currentQuery, setCurrentQuery] = useState<string>("")
+  const [state, setState] = useState<QuickStartState>({
+    completed: new Set(),
+    currentQuery: "",
+    executing: false
+  })
 
   useEffect(() => {
-    if (!open) return
-    setCurrentQuery("")
-    setCompleted(new Set())
+    if (!open) {
+      setState({
+        completed: new Set(),
+        currentQuery: "",
+        executing: false
+      })
+    }
   }, [open])
 
-  const handleExerciseClick = (exercise: typeof exercises[0]) => {
-    setCurrentQuery(exercise.query)
+  const { completed, currentQuery, executing } = state
+
+  const handleExerciseClick = (exercise: Exercise) => {
+    if (completed.has(exercise.id)) return
+    setState(prev => ({
+      ...prev,
+      currentQuery: exercise.query,
+      executing: false
+    }))
   }
 
-  const handleRun = () => {
-    onExecute(currentQuery)
+  const handleRun = async () => {
+    if (!currentQuery || executing) return
+
     const exercise = exercises.find((e) => e.query === currentQuery)
-    if (exercise) {
-      setCompleted((prev) => new Set([...prev, exercise.id]))
-      if (completed.size + 1 === exercises.length) {
-        setTimeout(() => {
-          onClose()
-          if (onQueryComplete) onQueryComplete()
-        }, 2000)
-      }
+    if (!exercise) return
+
+    setState(prev => ({
+      ...prev,
+      executing: true
+    }))
+
+    try {
+      await onExecute(currentQuery)
+
+      setState(prev => ({
+        ...prev,
+        executing: false,
+        completed: new Set([...prev.completed, exercise.id])
+      }))
+    } catch (error) {
+      setState(prev => ({
+        ...prev,
+        executing: false
+      }))
+    }
+
+    if (completed.size + 1 === exercises.length) {
+      setTimeout(() => {
+        onClose()
+        if (onQueryComplete) onQueryComplete()
+      }, 500)
     }
   }
 
@@ -93,13 +144,18 @@ export function QuickStartDialog({ open, onClose, onExecute, onQueryComplete }: 
             <div className="size-10 flex items-center justify-center rounded bg-accent/10">
               <Sparkles className="size-5 text-accent" />
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="text-lg font-semibold text-foreground">
                 Bienvenido a QueryLab
               </h2>
-              <p className="text-sm text-muted-foreground">
-                3 ejercicios guiados para familiarizarte
-              </p>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="sharp" className="text-[10px]">
+                  Quick Start
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  {completed.size} de {exercises.length} ejercicios completados
+                </span>
+              </div>
             </div>
           </div>
 
@@ -107,7 +163,7 @@ export function QuickStartDialog({ open, onClose, onExecute, onQueryComplete }: 
             <div className="space-y-4">
               {exercises.map((exercise) => {
                 const isCompleted = completed.has(exercise.id)
-                const isCurrent = !isCompleted && currentQuery === exercise.query
+                const isCurrent = !isCompleted && currentQuery === exercise.query && !executing
 
                 return (
                   <Card
@@ -149,34 +205,61 @@ export function QuickStartDialog({ open, onClose, onExecute, onQueryComplete }: 
                           {exercise.description}
                         </p>
                         <div className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded border border-border/50">
+                            <span className="text-[10px] text-accent">
+                              <Zap className="inline size-3 mr-1" />
+                              Click en: {exercise.hint}
+                            </span>
+                            {isCompleted && (
+                              <Check className="size-3 text-accent" />
+                            )}
+                          </div>
                           <Button
                             variant={isCurrent ? "sharp-accent" : "sharp"}
                             size="sm"
                             onClick={() => handleExerciseClick(exercise)}
-                            disabled={isCompleted}
+                            disabled={isCompleted || executing}
                             className="w-full justify-start gap-2"
                           >
                             <ArrowRight className={`size-3 transition-transform ${isCurrent ? "translate-x-1" : ""}`} />
-                            Ejecutar consulta
+                            {isCurrent
+                              ? "Ejecutar consulta"
+                              : "Ya ejecutado"}
                           </Button>
-                          {!isCompleted && currentQuery === exercise.query && (
+                          {!isCurrent && !isCompleted && (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={handleRun}
-                              disabled={!currentQuery}
+                              disabled={!currentQuery || executing}
                               className="w-full justify-center gap-2"
                             >
-                              <ArrowRight className="size-3" />
-                              Ejecutar
+                              {executing ? (
+                                <>
+                                  <Loader2 className="size-3 animate-spin" />
+                                  Ejecutando...
+                                </>
+                              ) : (
+                                <>
+                                  <ArrowRight className="size-3" />
+                                  Ejecutar consulta
+                                </>
+                              )}
                             </Button>
                           )}
                         </div>
-                        <div className="mt-3">
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                            💡 {exercise.hint}
-                          </span>
-                        </div>
+                        {executing && currentQuery === exercise.query && (
+                          <div className="mt-3 p-2 bg-accent/10 border border-accent/30 rounded text-xs text-accent text-center">
+                            <Loader2 className="size-3 inline animate-spin" />
+                            <span className="ml-2">Ejecutando query...</span>
+                          </div>
+                        )}
+                        {completed.has(exercise.id) && (
+                          <div className="mt-3 p-2 bg-accent/10 border border-accent/30 rounded text-xs text-accent text-center">
+                            <Check className="size-3 inline" />
+                            <span className="ml-2">Query ejecutada correctamente</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -198,6 +281,19 @@ export function QuickStartDialog({ open, onClose, onExecute, onQueryComplete }: 
               </div>
               <div className="p-2 bg-background border border-border rounded text-xs font-mono text-muted-foreground break-all">
                 {currentQuery}
+              </div>
+            </div>
+          )}
+
+          {completed.size === exercises.length && (
+            <div className="p-4 border-t border-border bg-accent/10">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-accent">
+                  ¡Quick Start completado!
+                </span>
+                <Button variant="outline" size="sm" onClick={onClose}>
+                  Comenzar
+                </Button>
               </div>
             </div>
           )}

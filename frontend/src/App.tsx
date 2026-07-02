@@ -1,8 +1,8 @@
 import { lazy, Suspense, useState, useCallback, useEffect } from "react"
 import { Sidebar } from "@/components/layout/Sidebar"
 import { ResultCanvas } from "@/components/layout/ResultCanvas"
-import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
 import { ShortcutsDialog } from "@/components/layout/ShortcutsDialog"
+import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
 import { useSound } from "@/hooks/useSound"
@@ -55,14 +55,17 @@ function App() {
     }
   }, [status, result])
 
-  const handleExecute = useCallback(() => {
-    execute().then(() => {
-      const s = status
-      if (s === "success" || s === "error") {
-        if (s === "success") playSuccess()
-      }
-    })
+  const handleExecute = useCallback(async () => {
+    await execute()
+    const s = status
+    if (s === "success" || s === "error") {
+      if (s === "success") playSuccess()
+    }
   }, [execute, status, playSuccess])
+
+  const handleQuickStartComplete = useCallback(() => {
+    setQuickStartOpen(false)
+  }, [])
 
   return (
     <div className="neoclassic h-screen flex flex-col bg-background text-foreground overflow-hidden">
@@ -205,18 +208,18 @@ function App() {
         </main>
       </div>
 
-      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-      <QuickStartDialog
-        open={quickStartOpen}
-        onClose={() => setQuickStartOpen(false)}
-        onExecute={(query) => {
-          setQuery(query)
-          execute()
-        }}
-        onQueryComplete={() => {
-          localStorage.setItem('querylab-onboarding', 'completed')
-        }}
-      />
+<ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <Suspense fallback={null}>
+        <QuickStartDialog
+          open={quickStartOpen}
+          onClose={() => setQuickStartOpen(false)}
+          onExecute={async (query) => {
+            setQuery(query)
+            await execute()
+          }}
+          onQueryComplete={handleQuickStartComplete}
+        />
+      </Suspense>
     </div>
   )
 }
