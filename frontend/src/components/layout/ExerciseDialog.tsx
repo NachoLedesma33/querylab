@@ -24,11 +24,12 @@ interface ExerciseDialogProps {
   open: boolean
   onClose: () => void
   onLoadQuery: (query: string) => void
+  onSelect: (exercise: Exercise) => void
 }
 
 const difficulties: Difficulty[] = ["basic", "intermediate", "advanced"]
 
-export function ExerciseDialog({ open, onClose, onLoadQuery }: ExerciseDialogProps) {
+export function ExerciseDialog({ open, onClose, onLoadQuery, onSelect }: ExerciseDialogProps) {
   const [filter, setFilter] = useState<Difficulty | "all">("all")
   const [selectedId, setSelectedId] = useState<number>(1)
   const [showHint, setShowHint] = useState(false)
@@ -75,13 +76,15 @@ export function ExerciseDialog({ open, onClose, onLoadQuery }: ExerciseDialogPro
 
   const handleLoadSolution = () => {
     onLoadQuery(selected.solution)
+    onSelect(selected)
     handleToggleComplete(selected.id)
     setShowSolution(false)
     setShowHint(false)
   }
 
-  const handleSelect = (id: number) => {
-    setSelectedId(id)
+  const handleSelect = (ex: Exercise) => {
+    setSelectedId(ex.id)
+    onSelect(ex)
     setShowHint(false)
     setShowSolution(false)
   }
@@ -135,7 +138,7 @@ export function ExerciseDialog({ open, onClose, onLoadQuery }: ExerciseDialogPro
                     return (
                       <button
                         key={ex.id}
-                        onClick={() => handleSelect(ex.id)}
+                        onClick={() => handleSelect(ex)}
                         className={`w-full text-left px-4 py-2 border-b border-border/20 flex items-center gap-2 transition-colors ${
                           isSelected
                             ? "bg-accent/[0.04] border-l-2 border-l-accent"

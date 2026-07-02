@@ -6,7 +6,9 @@ import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
 import { QueryTemplates } from "@/components/layout/QueryTemplates"
 import { SaveQueryDialog } from "@/components/layout/SaveQueryDialog"
 import { ExerciseDialog } from "@/components/layout/ExerciseDialog"
+import { ExerciseBar } from "@/components/layout/ExerciseBar"
 import { SkipLink } from "@/components/layout/SkipLink"
+import type { Exercise } from "@/data/exercises"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
 import { useSound } from "@/hooks/useSound"
@@ -37,6 +39,7 @@ function App() {
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [savesOpen, setSavesOpen] = useState(false)
   const [exercisesOpen, setExercisesOpen] = useState(false)
+  const [activeExercise, setActiveExercise] = useState<Exercise | null>(null)
   const [presentation, setPresentation] = useState(false)
   const [draggedTable, setDraggedTable] = useState<string | null>(null)
   const [quickStartOpen, setQuickStartOpen] = useState(false)
@@ -116,7 +119,6 @@ function App() {
 
   const handleLoadExerciseQuery = useCallback((q: string) => {
     setQuery(q)
-    setExercisesOpen(false)
   }, [setQuery])
 
   return (
@@ -140,7 +142,7 @@ function App() {
                   {d}
                 </Button>
               ))}
-            </div>
+          </div>
           )}
           <Button variant="sharp" size="icon-xs" onClick={() => setTemplatesOpen(true)} aria-label="Templates de consultas" title="Templates de consultas" className="ml-2">
             <FileCode className="size-3.5" />
@@ -195,9 +197,17 @@ function App() {
         )}
 
         <main className="flex-1 flex flex-col min-w-0">
-          <div className="h-1/2 min-h-[120px]">
-            <Suspense fallback={<EditorSkeleton />}>
-              <QueryEditor
+          <div className={`flex flex-col min-h-[120px] ${activeExercise ? "" : "h-1/2"}`}>
+            {activeExercise && (
+              <ExerciseBar
+                exercise={activeExercise}
+                onLoadSolution={(q) => setQuery(q)}
+                onDismiss={() => setActiveExercise(null)}
+              />
+            )}
+            <div className={activeExercise ? "flex-1 min-h-[120px]" : "flex-1"}>
+              <Suspense fallback={<EditorSkeleton />}>
+                <QueryEditor
                 value={query}
                 onChange={setQuery}
                 onExecute={handleExecute}
@@ -207,6 +217,7 @@ function App() {
                 onClearDrag={() => setDraggedTable(null)}
               />
             </Suspense>
+          </div>
           </div>
 
           <div className="flex-1 min-h-[120px]">
@@ -237,6 +248,7 @@ function App() {
         open={exercisesOpen}
         onClose={() => setExercisesOpen(false)}
         onLoadQuery={handleLoadExerciseQuery}
+        onSelect={(ex) => { setActiveExercise(ex); setExercisesOpen(false) }}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <Suspense fallback={null}>
