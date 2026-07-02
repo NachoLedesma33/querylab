@@ -43,7 +43,7 @@ function App() {
   useEffect(() => {
     const hasHistory = history.length > 0
     const onboardingProgress = localStorage.getItem('querylab-onboarding')
-    const shouldShowQuickStart = !hasHistory || onboardingProgress === null
+    const shouldShowQuickStart = !hasHistory && onboardingProgress === null
     if (shouldShowQuickStart && !quickStartOpen) {
       setQuickStartOpen(true)
     }
@@ -209,9 +209,6 @@ function App() {
         <QuickStartDialog
           open={quickStartOpen}
           onClose={() => setQuickStartOpen(false)}
-          onExecute={async (query) => {
-            await setAndExecute(query)
-          }}
         />
       </Suspense>
     </div>
