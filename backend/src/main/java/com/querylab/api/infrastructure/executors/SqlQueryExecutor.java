@@ -22,10 +22,6 @@ public class SqlQueryExecutor implements QueryExecutor {
     private static final int MAX_ROWS = 1000;
     private static final int QUERY_TIMEOUT_SECONDS = 10;
 
-    private static final Pattern HAS_LIMIT = Pattern.compile(
-        "\\bLIMIT\\s+\\d+", Pattern.CASE_INSENSITIVE
-    );
-
     private static final Map<String, String> H2_MODES = Map.of(
         "MYSQL", "MySQL",
         "POSTGRESQL", "PostgreSQL",
@@ -33,7 +29,7 @@ public class SqlQueryExecutor implements QueryExecutor {
         "ORACLE", "Oracle"
     );
 
-    private String currentDialect = "H2";
+    private String currentDialect = "";
 
     public SqlQueryExecutor(JdbcTemplate jdbcTemplate, QueryValidator validator) {
         this.jdbcTemplate = jdbcTemplate;
@@ -73,9 +69,7 @@ public class SqlQueryExecutor implements QueryExecutor {
                 );
             }
             throw new IllegalArgumentException(
-                "Error al ejecutar la consulta SQL: " + (msg != null ? msg : "Error desconocido") +
-                ". La base de datos puede no estar inicializada correctamente. " +
-                "Probá usando 'Restaurar BD' en el menú superior."
+                "Error al ejecutar la consulta SQL: " + (msg != null ? msg : "Error desconocido")
             );
         }
 
@@ -103,11 +97,16 @@ public class SqlQueryExecutor implements QueryExecutor {
     }
 
     String enforceLimit(String sql) {
-        if (HAS_LIMIT.matcher(sql).find()) {
+        boolean isSqlServer = "SQLSERVER".equals(currentDialect);
+        String limitClause = isSqlServer ? "\\bTOP\\s+\\d+" : "\\bLIMIT\\s+\\d+";
+        if (Pattern.compile(limitClause, Pattern.CASE_INSENSITIVE).matcher(sql).find()) {
             return sql;
         }
         if (sql.endsWith(";")) {
             sql = sql.substring(0, sql.length() - 1);
+        }
+        if (isSqlServer) {
+            return sql.replaceFirst("(?i)^(SELECT\\s+)", "$1TOP " + MAX_ROWS + " ");
         }
         return sql + " LIMIT " + MAX_ROWS;
     }
