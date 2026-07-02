@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useRef } from "react"
 import * as XLSX from "xlsx"
 import { Card } from "../ui/card"
 import { Skeleton } from "../ui/skeleton"
@@ -8,6 +8,7 @@ import { ScrollArea } from "../ui/scroll-area"
 import { Badge } from "../ui/badge"
 import { QueryVisualizer } from "../flow/QueryVisualizer"
 import { StepPipeline } from "../flow/StepPipeline"
+import { ColumnStats } from "./ColumnStats"
 import type { QueryResponse } from "../../types"
 import type { PipelineStep, PipelineState } from "../flow/pipeline-types"
 import {
@@ -197,6 +198,8 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
   const [sortCol, setSortCol] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>(null)
   const [filterText, setFilterText] = useState("")
+  const [statsCol, setStatsCol] = useState<string | null>(null)
+  const headerRefs = useRef<Record<string, HTMLElement | null>>({})
 
   const filtered = useMemo(() => {
     if (!filterText.trim()) return allRows
@@ -249,6 +252,7 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
           {sorted.length} de {totalRows} filas
         </span>
       </div>
+      {statsCol && <ColumnStats column={statsCol} rows={sorted} onClose={() => setStatsCol(null)} anchorEl={headerRefs.current[statsCol]} />}
       <ScrollArea className="flex-1 min-h-0">
         <div className="p-2 min-h-full">
           {pageRows.length === 0 ? (
@@ -258,27 +262,31 @@ function PaginatedTable({ result: allRows, columns, totalRows }: {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse" role="table" aria-label="Resultados de la consulta">
-                <thead>
-                  <tr className="border-b border-border">
-                    {columns.map((col) => {
-                      const active = sortCol === col
-                      const dir = active ? sortDir : null
-                      return (
-                        <th
-                          key={col}
-                          onClick={() => handleSort(col)}
-                          className="text-left px-2 py-1 text-[10px] font-semibold text-accent uppercase tracking-wider cursor-pointer select-none hover:text-accent/80 transition-colors"
-                          scope="col"
-                        >
-                          <span className="inline-flex items-center gap-1">
-                            {col}
-                            {dir === "asc" ? <ArrowUp className="size-2.5" /> : dir === "desc" ? <ArrowDown className="size-2.5" /> : <ArrowUpDown className="size-2.5 opacity-30" />}
-                          </span>
-                        </th>
-                      )
-                    })}
-                  </tr>
-                </thead>
+                  <thead>
+                    <tr className="border-b border-border">
+                      {columns.map((col) => {
+                        const active = sortCol === col
+                        const dir = active ? sortDir : null
+                        return (
+                          <th key={col} className="text-left px-2 py-1 text-[10px] font-semibold text-accent uppercase tracking-wider" scope="col">
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                ref={(el) => { headerRefs.current[col] = el }}
+                                onClick={() => setStatsCol(statsCol === col ? null : col)}
+                                className="hover:text-accent/80 transition-colors cursor-pointer bg-transparent border-0 p-0 font-inherit underline decoration-dotted underline-offset-2"
+                                title="Ver estadísticas de columna"
+                              >
+                                {col}
+                              </button>
+                              <button onClick={() => handleSort(col)} className="hover:text-accent/80 transition-colors cursor-pointer bg-transparent border-0 p-0">
+                                {dir === "asc" ? <ArrowUp className="size-2.5" /> : dir === "desc" ? <ArrowDown className="size-2.5" /> : <ArrowUpDown className="size-2.5 opacity-30" />}
+                              </button>
+                            </div>
+                          </th>
+                        )
+                      })}
+                    </tr>
+                  </thead>
                 <tbody>
                   {pageRows.map((row, i) => (
                     <tr key={i} className="border-b border-border/30 hover:bg-muted/30 transition-colors">

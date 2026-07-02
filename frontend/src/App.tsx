@@ -58,6 +58,24 @@ function App() {
   }, [history, quickStartOpen])
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem("querylab-session")
+      if (saved) {
+        const { query: q, dialect: d, sqlDialect: sd } = JSON.parse(saved)
+        if (q) setQuery(q)
+        if (d) setDialect(d)
+        if (sd) setSqlDialect(sd)
+      }
+    } catch { /* ignore */ }
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("querylab-session", JSON.stringify({ query, dialect, sqlDialect }))
+    } catch { /* ignore */ }
+  }, [query, dialect, sqlDialect])
+
+  useEffect(() => {
     if (status === "success" && result) {
       localStorage.setItem('querylab-last-success', new Date().toISOString())
     }
