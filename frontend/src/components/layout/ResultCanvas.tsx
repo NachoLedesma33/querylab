@@ -10,6 +10,7 @@ import { QueryVisualizer } from "../flow/QueryVisualizer"
 import { StepPipeline } from "../flow/StepPipeline"
 import { ColumnStats } from "./ColumnStats"
 import { VirtualTable } from "./VirtualTable"
+import { exercises, difficultyLabels, difficultyColors } from "../../data/exercises"
 import type { QueryResponse } from "../../types"
 import type { PipelineStep, PipelineState } from "../flow/pipeline-types"
 import {
@@ -26,6 +27,7 @@ interface ResultCanvasProps {
   error: string | null
   onExecute: () => void
   onSelectResult: (index: number) => void
+  onSelectExercise?: (id: number) => void
 }
 
 const stepOrder: PipelineStep[] = ["scan", "join", "filter"]
@@ -110,11 +112,11 @@ function exportXml(result: QueryResponse) {
   download("resultados.xml", `<?xml version="1.0" encoding="UTF-8"?>\n<resultados>\n${rows.join("\n")}\n</resultados>`)
 }
 
-export function EmptyState({ onExecute }: { onExecute: () => void }) {
+export function EmptyState({ onExecute, onSelectExercise }: { onExecute: () => void; onSelectExercise?: (id: number) => void }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
-      <div className="size-16 bg-muted flex items-center justify-center border border-border">
-        <Brain className="size-8 text-accent" />
+    <div className="flex flex-col items-center justify-center h-full gap-3 text-center p-6">
+      <div className="size-14 bg-muted flex items-center justify-center border border-border">
+        <Brain className="size-7 text-accent" />
       </div>
       <div>
         <h3 className="text-base font-semibold text-foreground">Listo para consultar</h3>
@@ -123,10 +125,42 @@ export function EmptyState({ onExecute }: { onExecute: () => void }) {
           <kbd className="px-1.5 py-0.5 bg-muted text-xs font-mono border border-border">Ejecutar</kbd>{" "}
           para ver los resultados aquí.
         </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          También podés separar varias consultas con <kbd className="px-1 bg-muted text-[10px] font-mono border border-border">;</kbd>
-        </p>
       </div>
+
+      {onSelectExercise && (
+        <div className="w-full max-w-2xl mt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Probar ejercicios</span>
+            <div className="h-px flex-1 bg-border/50" />
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {([1, 11, 21] as const).map((start) => {
+              const group = exercises.slice(start - 1, start + 9)
+              const diff = group[0].difficulty
+              return (
+                <div key={start} className="col-span-3 sm:col-span-1">
+                  <span className={`text-[9px] font-semibold uppercase tracking-wider block mb-1.5 ${difficultyColors[diff].split(" ")[0]}`}>
+                    {difficultyLabels[diff]}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.map((ex) => (
+                      <button
+                        key={ex.id}
+                        onClick={() => onSelectExercise(ex.id)}
+                        className="text-[10px] px-2 py-1 border border-border hover:border-accent hover:text-accent text-muted-foreground transition-colors bg-background"
+                        title={ex.title}
+                      >
+                        {ex.id}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       <Button variant="sharp-accent" size="sm" onClick={onExecute} aria-label="Ejecutar consulta">
         <Play className="size-3.5" />
         Ejecutar consulta
@@ -426,7 +460,7 @@ function SuccessState({ result, results, currentResultIndex, onSelectResult }: {
   )
 }
 
-export function ResultCanvas({ status, result, results, currentResultIndex, error, onExecute, onSelectResult }: ResultCanvasProps) {
+export function ResultCanvas({ status, result, results, currentResultIndex, error, onExecute, onSelectResult, onSelectExercise }: ResultCanvasProps) {
   const [view, setView] = useState<"results" | "graph">("results")
   const [pipeline, setPipeline] = useState<PipelineState>({
     active: false, currentStep: null, completedSteps: [],
@@ -473,7 +507,7 @@ export function ResultCanvas({ status, result, results, currentResultIndex, erro
           </div>
         </div>
       ) : status === "idle" ? (
-        <EmptyState onExecute={onExecute} />
+        <EmptyState onExecute={onExecute} onSelectExercise={onSelectExercise} />
       ) : status === "loading" ? (
         <LoadingState />
       ) : status === "error" && error ? (
@@ -481,7 +515,7 @@ export function ResultCanvas({ status, result, results, currentResultIndex, erro
       ) : status === "success" && result ? (
         <SuccessState result={result} results={results} currentResultIndex={currentResultIndex} onSelectResult={onSelectResult} />
       ) : (
-        <EmptyState onExecute={onExecute} />
+        <EmptyState onExecute={onExecute} onSelectExercise={onSelectExercise} />
       )}
     </Card>
   )

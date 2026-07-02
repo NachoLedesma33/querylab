@@ -9,6 +9,7 @@ import { ExerciseDialog } from "@/components/layout/ExerciseDialog"
 import { ExerciseBar } from "@/components/layout/ExerciseBar"
 import { SkipLink } from "@/components/layout/SkipLink"
 import type { Exercise } from "@/data/exercises"
+import { exercises } from "@/data/exercises"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
 import { useSound } from "@/hooks/useSound"
@@ -203,6 +204,10 @@ function App() {
                 exercise={activeExercise}
                 onLoadSolution={(q) => setQuery(q)}
                 onDismiss={() => setActiveExercise(null)}
+                onNavigate={(id) => {
+                  const next = exercises.find((e) => e.id === id)
+                  if (next) setActiveExercise(next)
+                }}
               />
             )}
             <div className={activeExercise ? "flex-1 min-h-[120px]" : "flex-1"}>
@@ -229,6 +234,10 @@ function App() {
               error={error}
               onExecute={execute}
               onSelectResult={selectResult}
+              onSelectExercise={(id) => {
+                const ex = exercises.find((e) => e.id === id)
+                if (ex) setActiveExercise(ex)
+              }}
             />
           </div>
         </main>
