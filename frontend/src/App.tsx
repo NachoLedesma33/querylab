@@ -5,6 +5,7 @@ import { ShortcutsDialog } from "@/components/layout/ShortcutsDialog"
 import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
 import { QueryTemplates } from "@/components/layout/QueryTemplates"
 import { SaveQueryDialog } from "@/components/layout/SaveQueryDialog"
+import { ExerciseDialog } from "@/components/layout/ExerciseDialog"
 import { SkipLink } from "@/components/layout/SkipLink"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
@@ -12,7 +13,7 @@ import { useSound } from "@/hooks/useSound"
 import { useQueryFavorites } from "@/hooks/useQueryFavorites"
 import { useQuerySaves } from "@/hooks/useQuerySaves"
 import { Button } from "@/components/ui/button"
-import { Terminal, RotateCcw, Sun, Moon, Keyboard, Maximize2, Minimize2, Volume2, VolumeX, FileCode, Save } from "lucide-react"
+import { Terminal, RotateCcw, Sun, Moon, Keyboard, Maximize2, Minimize2, Volume2, VolumeX, FileCode, Save, GraduationCap } from "lucide-react"
 
 const QueryEditor = lazy(() => import("@/components/layout/QueryEditor"))
 
@@ -35,6 +36,7 @@ function App() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [templatesOpen, setTemplatesOpen] = useState(false)
   const [savesOpen, setSavesOpen] = useState(false)
+  const [exercisesOpen, setExercisesOpen] = useState(false)
   const [presentation, setPresentation] = useState(false)
   const [draggedTable, setDraggedTable] = useState<string | null>(null)
   const [quickStartOpen, setQuickStartOpen] = useState(false)
@@ -112,6 +114,11 @@ function App() {
     setSavesOpen(false)
   }, [setQuery])
 
+  const handleLoadExerciseQuery = useCallback((q: string) => {
+    setQuery(q)
+    setExercisesOpen(false)
+  }, [setQuery])
+
   return (
     <div className="neoclassic h-screen flex flex-col bg-background text-foreground overflow-hidden">
       <SkipLink />
@@ -137,6 +144,9 @@ function App() {
           )}
           <Button variant="sharp" size="icon-xs" onClick={() => setTemplatesOpen(true)} aria-label="Templates de consultas" title="Templates de consultas" className="ml-2">
             <FileCode className="size-3.5" />
+          </Button>
+          <Button variant="sharp" size="icon-xs" onClick={() => setExercisesOpen(true)} aria-label="Ejercicios SQL" title="Ejercicios SQL">
+            <GraduationCap className="size-3.5" />
           </Button>
           <Button variant="sharp" size="icon-xs" onClick={() => setSavesOpen(true)} aria-label="Consultas guardadas" title="Consultas guardadas">
             <Save className="size-3.5" />
@@ -222,6 +232,11 @@ function App() {
         onLoad={handleLoadQuery}
         onDelete={deleteSaved}
         currentQuery={query}
+      />
+      <ExerciseDialog
+        open={exercisesOpen}
+        onClose={() => setExercisesOpen(false)}
+        onLoadQuery={handleLoadExerciseQuery}
       />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <Suspense fallback={null}>
