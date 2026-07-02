@@ -63,10 +63,6 @@ function App() {
     }
   }, [execute, status, playSuccess])
 
-  const handleQuickStartComplete = useCallback(() => {
-    setQuickStartOpen(false)
-  }, [])
-
   return (
     <div className="neoclassic h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {!presentation && (
@@ -214,10 +210,8 @@ function App() {
           open={quickStartOpen}
           onClose={() => setQuickStartOpen(false)}
           onExecute={async (query) => {
-            setQuery(query)
-            await execute()
+            await setAndExecute(query)
           }}
-          onQueryComplete={handleQuickStartComplete}
         />
       </Suspense>
     </div>

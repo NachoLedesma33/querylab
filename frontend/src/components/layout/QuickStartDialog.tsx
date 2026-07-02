@@ -1,24 +1,15 @@
-import { useState, useEffect } from "react"
+import { useState, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { X, Check, ArrowRight, Sparkles, Database, GitBranch, Filter, Loader2, Zap } from "lucide-react"
-
-interface QuickStartDialogProps {
-  open: boolean
-  onClose: () => void
-  onExecute: (query: string) => Promise<void>
-  onQueryComplete?: () => void
-}
+import { Check, ArrowRight, Sparkles, Database, GitBranch, Filter, Loader2, ChevronDown, ChevronRight } from "lucide-react"
 
 interface Exercise {
   id: string
-  icon: typeof Database | typeof GitBranch | typeof Filter
+  icon: typeof Database
   title: string
   description: string
   query: string
-  hint: string
   step: number
   total: number
 }
@@ -30,7 +21,6 @@ const exercises: Exercise[] = [
     title: "Explorar una tabla",
     description: "Ejecutá 'SELECT * FROM movies' para ver todas las películas.",
     query: "SELECT * FROM movies",
-    hint: "Dale play a la tabla 'movies' en el sidebar izquierdo",
     step: 1,
     total: 3
   },
@@ -38,9 +28,8 @@ const exercises: Exercise[] = [
     id: "join",
     icon: GitBranch,
     title: "Hacer una JOIN",
-    description: "Ejecutá una consulta JOIN para ver relaciones entre usuarios y películas.",
+    description: "Ejecutá una consulta JOIN para ver relaciones.",
     query: "SELECT u.name, m.title FROM users u JOIN watch_history w ON u.id = w.user_id JOIN movies m ON w.movie_id = m.id LIMIT 10",
-    hint: "Click en 'Ejecutar consulta'",
     step: 2,
     total: 3
   },
@@ -50,271 +39,168 @@ const exercises: Exercise[] = [
     title: "Buscar por condición",
     description: "Filtrá películas con rating superior a 8.0",
     query: "SELECT title, rating FROM movies WHERE rating > 8.0 ORDER BY rating DESC",
-    hint: "Ejecutá la query con click en 'Ejecutar consulta'",
     step: 3,
     total: 3
   }
 ]
 
-interface QuickStartState {
-  completed: Set<string>
-  currentQuery: string
-  executing: boolean
+interface QuickStartDialogProps {
+  open: boolean
+  onClose: () => void
+  onExecute: (query: string) => Promise<void>
 }
 
-export function QuickStartDialog({ open, onClose, onExecute, onQueryComplete }: QuickStartDialogProps) {
-  const [state, setState] = useState<QuickStartState>({
-    completed: new Set(),
-    currentQuery: "",
-    executing: false
-  })
+export function QuickStartDialog({ open, onClose, onExecute }: QuickStartDialogProps) {
+  const [executing, setExecuting] = useState<string | null>(null)
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
+  const [collapsed, setCollapsed] = useState(false)
 
-  useEffect(() => {
-    if (!open) {
-      setTimeout(() => {
-        setState({
-          completed: new Set(),
-          currentQuery: "",
-          executing: false
-        })
-      }, 300)
+  const hadOnboarding = useRef(false)
+
+  const handleClose = useCallback(() => {
+    if (executing) return
+    if (!hadOnboarding.current) {
+      try { localStorage.setItem("querylab-onboarding", "completed") } catch {}
+      hadOnboarding.current = true
     }
-  }, [open])
+    onClose()
+  }, [executing, onClose])
 
-  const { completed, currentQuery, executing } = state
+  const handleExecute = useCallback(async (exercise: Exercise) => {
+    if (executing) return
 
-  const handleExerciseClick = (exercise: Exercise) => {
-    if (completed.has(exercise.id)) return
-    setState(prev => ({
-      ...prev,
-      currentQuery: exercise.query,
-      executing: false
-    }))
-  }
-
-  const handleRun = async () => {
-    if (!currentQuery || executing) return
-
-    const exercise = exercises.find((e) => e.query === currentQuery)
-    if (!exercise) return
-
-    setState(prev => ({
-      ...prev,
-      executing: true
-    }))
+    setExecuting(exercise.id)
+    setCollapsed(true)
 
     try {
-      await onExecute(currentQuery)
+      await onExecute(exercise.query)
+      const next = new Set(completedIds)
+      next.add(exercise.id)
+      setCompletedIds(next)
+    } catch {
+      setExecuting(null)
+      return
+    }
+    setExecuting(null)
 
-      setState(prev => ({
-        ...prev,
-        executing: false,
-        completed: new Set([...prev.completed, exercise.id])
-      }))
+    if (completedIds.size + 1 >= exercises.length) {
+      try { localStorage.setItem("querylab-onboarding", "completed") } catch {}
+      hadOnboarding.current = true
+      setTimeout(() => onClose(), 600)
+    }
+  }, [executing, completedIds, onExecute, onClose])
 
-      if (completed.size + 1 === exercises.length) {
-        setTimeout(() => {
-          onClose()
-          if (onQueryComplete) onQueryComplete()
-        }, 500)
-      }
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        executing: false,
-        currentQuery: ""
-      }))
-}
-  }
+  if (!open) return null
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 ${
-        executing ? "pointer-events-none" : ""
-      }`}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-hidden">
-        <button
-          onClick={() => onClose()}
-          disabled={executing}
-          className={`absolute top-4 right-4 p-2 text-muted-foreground hover:text-accent transition-colors z-10 ${
-            executing ? "cursor-not-allowed opacity-50" : ""
-          }`}
-          aria-label="Cerrar Quick Start"
-        >
-          <X className="size-5" />
-        </button>
-
-        <Card className="flex flex-col max-h-[90vh] border border-border bg-background">
-          <div className="flex items-center gap-3 p-4 border-b border-border shrink-0">
-            <div className="size-10 flex items-center justify-center rounded bg-accent/10">
-              <Sparkles className="size-5 text-accent" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-foreground">
-                Bienvenido a QueryLab
-              </h2>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="sharp" className="text-[10px]">
-                  Quick Start
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {completed.size} de {exercises.length} ejercicios completados
-                </span>
-              </div>
-            </div>
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 max-w-xs">
+      <Card className="w-full border border-border bg-background shadow-lg">
+        <div className="flex items-center justify-between p-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-4 text-accent" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
+              Quick Start
+            </span>
+            <Badge variant="sharp" className="text-[9px]">
+              {completedIds.size}/{exercises.length}
+            </Badge>
           </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={collapsed ? "Expandir" : "Colapsar"}
+            >
+              {collapsed ? <ChevronRight className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+            </button>
+            <button
+              onClick={handleClose}
+              disabled={executing !== null}
+              className="p-1 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Cerrar Quick Start"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
 
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-4">
-              {exercises.map((exercise) => {
-                const isCompleted = completed.has(exercise.id)
-                const isCurrent = !isCompleted && currentQuery === exercise.query
+        <div className={`transition-all duration-200 ${collapsed ? "max-h-0 overflow-hidden" : "max-h-96 overflow-y-auto"}`}>
+          <div className="p-2">
+            <p className="text-[10px] text-muted-foreground px-1 mb-2 leading-relaxed">
+              Completá los 3 ejercicios para familiarizarte con QueryLab.
+            </p>
 
-                return (
-                  <Card
-                    key={exercise.id}
-                    className={`p-4 border border-border transition-all ${
-                      isCurrent
-                        ? "border-accent bg-accent/5"
-                        : isCompleted
-                        ? "border-accent/30 opacity-60"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        <div className={`size-8 flex items-center justify-center rounded ${
-                          isCompleted
-                            ? "bg-accent/20 text-accent"
-                            : executing && currentQuery === exercise.query
-                            ? "bg-accent/20 text-accent animate-pulse"
-                            : "bg-muted"
-                        }`}>
-                          {executing && currentQuery === exercise.query ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <exercise.icon className="size-4" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="sharp" className="text-[10px]">
-                            Paso {exercise.step}/{exercise.total}
-                          </Badge>
-                          {isCompleted && (
-                            <Badge variant="sharp" className="text-[10px] bg-accent text-background">
-                              <Check className="size-2 mr-0.5" />
-                              Completado
-                            </Badge>
-                          )}
-                        </div>
-                        <h3 className="text-sm font-semibold text-foreground mb-1">
-                          {exercise.title}
-                        </h3>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          {exercise.description}
-                        </p>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between p-2 bg-muted/50 rounded border border-border/50">
-                            <span className="text-[10px] text-accent">
-                              <Zap className="inline size-3 mr-1" />
-                              {exercise.hint}
-                            </span>
-                            {isCompleted && (
-                              <Check className="size-3 text-accent" />
-                            )}
-                          </div>
-                          <Button
-                            variant={isCurrent ? "sharp-accent" : "sharp"}
-                            size="sm"
-                            onClick={() => handleExerciseClick(exercise)}
-                            disabled={isCompleted || executing}
-                            className="w-full justify-start gap-2"
-                          >
-                            <ArrowRight className={`size-3 transition-transform ${isCurrent ? "translate-x-1" : ""}`} />
-                            {isCurrent ? (
-                              "Ejecutar consulta"
-                            ) : (
-                              "Ya ejecutado"
-                            )}
-                          </Button>
-                          {!isCurrent && !isCompleted && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={handleRun}
-                              disabled={!currentQuery || executing}
-                              className="w-full justify-center gap-2"
-                            >
-                              {executing ? (
-                                <>
-                                  <Loader2 className="size-3 animate-spin" />
-                                  Ejecutando...
-                                </>
-                              ) : (
-                                <>
-                                  <ArrowRight className="size-3" />
-                                  Ejecutar consulta
-                                </>
-                              )}
-                            </Button>
-                          )}
-                        </div>
-                        {executing && currentQuery === exercise.query && (
-                          <div className="mt-3 p-2 bg-accent/10 border border-accent/30 rounded text-xs text-accent text-center animate-in fade-in slide-in-from-top-2">
-                            <Loader2 className="size-3 inline animate-spin" />
-                            <span className="ml-2">Ejecutando query...</span>
-                          </div>
-                        )}
-                        {completed.has(exercise.id) && (
-                          <div className="mt-3 p-2 bg-accent/10 border border-accent/30 rounded text-xs text-accent text-center">
-                            <Check className="size-3 inline" />
-                            <span className="ml-2">Query ejecutada correctamente</span>
-                          </div>
-                        )}
-                      </div>
+            {exercises.map((ex) => {
+              const isCompleted = completedIds.has(ex.id)
+              const isExecuting = executing === ex.id
+
+              return (
+                <div
+                  key={ex.id}
+                  className={`p-2 rounded border mb-1.5 transition-colors ${
+                    isCompleted
+                      ? "border-accent/30 opacity-60"
+                      : "border-border hover:border-accent/50"
+                  }`}
+                >
+                  <div className="flex items-start gap-2">
+                    <div className={`size-6 flex items-center justify-center rounded shrink-0 ${
+                      isCompleted ? "bg-accent/20 text-accent" :
+                      isExecuting ? "bg-accent/20 text-accent animate-pulse" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
+                      {isExecuting ? (
+                        <Loader2 className="size-3 animate-spin" />
+                      ) : (
+                        <ex.icon className="size-3" />
+                      )}
                     </div>
-                  </Card>
-                )
-              })}
-            </div>
-          </ScrollArea>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[10px] font-medium text-foreground">
+                          {ex.title}
+                        </span>
+                        {isCompleted && (
+                          <Check className="size-2.5 text-accent" />
+                        )}
+                      </div>
+                      <p className="text-[9px] text-muted-foreground mb-1.5 leading-relaxed">
+                        {ex.description}
+                      </p>
+                      <Button
+                        variant={isCompleted ? "ghost" : isExecuting ? "sharp" : "sharp-accent"}
+                        size="xs"
+                        onClick={() => handleExecute(ex)}
+                        disabled={isCompleted || executing !== null}
+                        className="w-full text-[10px] h-6 gap-1 justify-center"
+                      >
+                        {isExecuting ? (
+                          <><Loader2 className="size-2.5 animate-spin" /> Ejecutando...</>
+                        ) : isCompleted ? (
+                          <><Check className="size-2.5" /> Completado</>
+                        ) : (
+                          <><ArrowRight className="size-2.5" /> Ejecutar</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
 
-          {currentQuery && (
-            <div className="p-3 border-t border-border bg-muted/20 shrink-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="text-[10px]">
-                  {exercises.find((e) => e.query === currentQuery)?.step}
-                  /{exercises.find((e) => e.query === currentQuery)?.total}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {completed.size + 1} de {exercises.length} ejercicios completados
-                </span>
-              </div>
-              <div className="p-2 bg-background border border-border rounded text-xs font-mono text-muted-foreground break-all">
-                {currentQuery}
-              </div>
-            </div>
-          )}
-
-          {completed.size === exercises.length && (
-            <div className="p-4 border-t border-border bg-accent/10">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold text-accent">
-                  ¡Quick Start completado!
-                </span>
-                <Button variant="outline" size="sm" onClick={onClose}>
-                  Comenzar
-                </Button>
-              </div>
-            </div>
-          )}
-        </Card>
-      </div>
+        {completedIds.size === exercises.length && (
+          <div className="p-2 border-t border-border bg-accent/10 text-center">
+            <span className="text-[10px] font-medium text-accent">
+              ¡Todos los ejercicios completados! 🎉
+            </span>
+            <Button variant="ghost" size="xs" onClick={handleClose} className="ml-2 text-[10px]">
+              Cerrar
+            </Button>
+          </div>
+        )}
+      </Card>
     </div>
   )
 }
