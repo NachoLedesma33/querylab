@@ -3,11 +3,13 @@ import { Sidebar } from "@/components/layout/Sidebar"
 import { ResultCanvas } from "@/components/layout/ResultCanvas"
 import { ShortcutsDialog } from "@/components/layout/ShortcutsDialog"
 import { QuickStartDialog } from "@/components/layout/QuickStartDialog"
+import { QueryTemplates } from "@/components/layout/QueryTemplates"
 import { useQueryLab } from "@/hooks/useQueryLab"
 import { useTheme } from "@/hooks/useTheme"
 import { useSound } from "@/hooks/useSound"
+import { useQueryFavorites } from "@/hooks/useQueryFavorites"
 import { Button } from "@/components/ui/button"
-import { Terminal, RotateCcw, Sun, Moon, Keyboard, Maximize2, Minimize2, Volume2, VolumeX } from "lucide-react"
+import { Terminal, RotateCcw, Sun, Moon, Keyboard, Maximize2, Minimize2, Volume2, VolumeX, FileCode } from "lucide-react"
 
 const QueryEditor = lazy(() => import("@/components/layout/QueryEditor"))
 
@@ -28,6 +30,7 @@ function EditorSkeleton() {
 
 function App() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [templatesOpen, setTemplatesOpen] = useState(false)
   const [presentation, setPresentation] = useState(false)
   const [draggedTable, setDraggedTable] = useState<string | null>(null)
   const [quickStartOpen, setQuickStartOpen] = useState(false)
@@ -39,6 +42,7 @@ function App() {
   } = useQueryLab()
   const { theme, toggleTheme } = useTheme()
   const { soundEnabled, toggleSound, playSuccess } = useSound()
+  const { favorites, addFavorite, removeFavorite, isFavorite } = useQueryFavorites()
 
   useEffect(() => {
     const hasHistory = history.length > 0
@@ -63,6 +67,19 @@ function App() {
     }
   }, [execute, status, playSuccess])
 
+  const handleToggleFavorite = useCallback((entry: { query: string; dialect: string; sqlDialect: string }) => {
+    if (isFavorite(entry.query)) {
+      removeFavorite(entry.query)
+    } else {
+      addFavorite(entry.query, entry.dialect, entry.sqlDialect)
+    }
+  }, [isFavorite, removeFavorite, addFavorite])
+
+  const handleInsertTemplate = useCallback((templateQuery: string) => {
+    setQuery(templateQuery)
+    setTemplatesOpen(false)
+  }, [setQuery])
+
   return (
     <div className="neoclassic h-screen flex flex-col bg-background text-foreground overflow-hidden">
       {!presentation && (
@@ -71,13 +88,7 @@ function App() {
           <span className="text-sm font-bold tracking-tight">QueryLab</span>
           <div className="ml-4 flex items-center gap-1">
             {(["SQL", "GraphQL"] as const).map((d) => (
-              <Button
-                key={d}
-                variant={dialect === d ? "sharp-accent" : "sharp"}
-                size="xs"
-                onClick={() => setDialect(d)}
-                aria-pressed={dialect === d}
-              >
+              <Button key={d} variant={dialect === d ? "sharp-accent" : "sharp"} size="xs" onClick={() => setDialect(d)} aria-pressed={dialect === d}>
                 {d}
               </Button>
             ))}
@@ -85,65 +96,31 @@ function App() {
           {dialect === "SQL" && (
             <div className="flex items-center gap-1 ml-1 border-l border-border pl-2">
               {SQL_DIALECTS.map((d) => (
-                <Button
-                  key={d}
-                  variant={sqlDialect === d ? "sharp-accent" : "sharp"}
-                  size="xs"
-                  onClick={() => setSqlDialect(d)}
-                  aria-pressed={sqlDialect === d}
-                  className="text-[11px] px-1.5"
-                >
+                <Button key={d} variant={sqlDialect === d ? "sharp-accent" : "sharp"} size="xs" onClick={() => setSqlDialect(d)} aria-pressed={sqlDialect === d} className="text-[11px] px-1.5">
                   {d}
                 </Button>
               ))}
             </div>
           )}
+          <Button variant="sharp" size="icon-xs" onClick={() => setTemplatesOpen(true)} aria-label="Templates de consultas" title="Templates de consultas" className="ml-2">
+            <FileCode className="size-3.5" />
+          </Button>
           <span className="text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 ml-auto uppercase tracking-widest">
             {dialect === "SQL" ? `Entorno ${sqlDialect}` : "Entorno GraphQL"}
           </span>
-          <Button
-            variant="sharp"
-            size="icon-xs"
-            onClick={toggleSound}
-            aria-label={soundEnabled() ? "Desactivar sonido" : "Activar sonido"}
-            title={soundEnabled() ? "Desactivar sonido" : "Activar sonido"}
-          >
+          <Button variant="sharp" size="icon-xs" onClick={toggleSound} aria-label={soundEnabled() ? "Desactivar sonido" : "Activar sonido"} title={soundEnabled() ? "Desactivar sonido" : "Activar sonido"}>
             {soundEnabled() ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
           </Button>
-          <Button
-            variant="sharp"
-            size="icon-xs"
-            onClick={toggleTheme}
-            aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
-            title={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}
-          >
+          <Button variant="sharp" size="icon-xs" onClick={toggleTheme} aria-label={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"} title={theme === "dark" ? "Activar modo claro" : "Activar modo oscuro"}>
             {theme === "dark" ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
           </Button>
-          <Button
-            variant="sharp"
-            size="icon-xs"
-            onClick={() => setShortcutsOpen(true)}
-            aria-label="Atajos de teclado"
-            title="Atajos de teclado"
-          >
+          <Button variant="sharp" size="icon-xs" onClick={() => setShortcutsOpen(true)} aria-label="Atajos de teclado" title="Atajos de teclado">
             <Keyboard className="size-3.5" />
           </Button>
-          <Button
-            variant="sharp"
-            size="icon-xs"
-            onClick={() => setPresentation(true)}
-            aria-label="Modo presentación"
-            title="Modo presentación"
-          >
+          <Button variant="sharp" size="icon-xs" onClick={() => setPresentation(true)} aria-label="Modo presentación" title="Modo presentación">
             <Maximize2 className="size-3.5" />
           </Button>
-          <Button
-            variant="sharp"
-            size="icon-xs"
-            onClick={resetDatabase}
-            aria-label="Restaurar base de datos"
-            title="Restaurar la base de datos a su estado original"
-          >
+          <Button variant="sharp" size="icon-xs" onClick={resetDatabase} aria-label="Restaurar base de datos" title="Restaurar la base de datos a su estado original">
             <RotateCcw className="size-3.5" />
           </Button>
         </header>
@@ -151,14 +128,7 @@ function App() {
 
       {presentation && (
         <div className="absolute top-2 right-2 z-50">
-          <Button
-            variant="sharp"
-            size="icon-xs"
-            onClick={() => setPresentation(false)}
-            aria-label="Salir de modo presentación"
-            title="Salir de modo presentación"
-            className="bg-card/80 backdrop-blur"
-          >
+          <Button variant="sharp" size="icon-xs" onClick={() => setPresentation(false)} aria-label="Salir de modo presentación" title="Salir de modo presentación" className="bg-card/80 backdrop-blur">
             <Minimize2 className="size-3.5" />
           </Button>
         </div>
@@ -172,6 +142,9 @@ function App() {
             onSelectHistory={(query) => setAndExecute(query).catch(() => {})}
             onClearHistory={clearHistory}
             onDragTable={(tableName) => setDraggedTable(tableName)}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
+            isFavorite={isFavorite}
           />
         )}
 
@@ -204,12 +177,14 @@ function App() {
         </main>
       </div>
 
-<ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <QueryTemplates
+        open={templatesOpen}
+        onClose={() => setTemplatesOpen(false)}
+        onInsert={handleInsertTemplate}
+      />
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       <Suspense fallback={null}>
-        <QuickStartDialog
-          open={quickStartOpen}
-          onClose={() => setQuickStartOpen(false)}
-        />
+        <QuickStartDialog open={quickStartOpen} onClose={() => setQuickStartOpen(false)} />
       </Suspense>
     </div>
   )
